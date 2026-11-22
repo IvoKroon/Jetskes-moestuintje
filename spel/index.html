@@ -44,8 +44,8 @@
             </ul>
             <button id="startKnop" class="knop groen breed">Start</button>
             <div class="knoppen-rij">
-              <button class="knop naar-markt"><img data-sprite="muntje" class="sprite" alt="" />Markt</button>
-              <button class="knop naar-bakkerij"><img data-sprite="aardbeientaart" class="sprite" alt="" />Bakkerij</button>
+              <a class="knop naar-markt" href="../markt/"><img data-sprite="muntje" class="sprite" alt="" />Markt</a>
+              <a class="knop naar-bakkerij" href="../bakkerij/"><img data-sprite="aardbeientaart" class="sprite" alt="" />Bakkerij</a>
             </div>
             <div class="records" hidden>
               <h3 id="record">Record 0</h3>
@@ -54,23 +54,6 @@
           </div>
         </section>
 
-        <section id="markt" class="scherm" hidden>
-          <div class="kader">
-            <h2>Markt</h2>
-            <div id="marktInhoud"></div>
-            <button class="knop breed naar-bakkerij"><img data-sprite="aardbeientaart" class="sprite" alt="" />Naar de bakkerij</button>
-            <button class="knop breed terug">Terug</button>
-          </div>
-        </section>
-
-        <section id="bakkerij" class="scherm" hidden>
-          <div class="kader">
-            <h2>Bakkerij</h2>
-            <div id="bakkerijInhoud"></div>
-            <button class="knop groen breed naar-markt"><img data-sprite="muntje" class="sprite" alt="" />Naar de markt</button>
-            <button class="knop breed terug">Terug</button>
-          </div>
-        </section>
 
         <section id="pauze" class="scherm" hidden>
           <div class="kader">
@@ -96,7 +79,7 @@
               <p id="naamMelding" class="naam-melding" role="status"></p>
             </form>
             <button id="opnieuwKnop" class="knop groen breed">Nog een keer</button>
-            <button class="knop breed naar-markt"><img data-sprite="muntje" class="sprite" alt="" />Verkoop je oogst</button>
+            <a class="knop breed naar-markt" href="../markt/"><img data-sprite="muntje" class="sprite" alt="" />Verkoop je oogst</a>
             <div class="records online" id="onlineRecords" hidden>
               <h3>Top 10 online</h3>
               <ol id="onlineScores"></ol>

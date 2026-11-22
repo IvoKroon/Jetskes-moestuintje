@@ -2,7 +2,7 @@
 import { lees, bewaar } from '../shared/opslag.js';
 import { plaatje, plaatjeUrl, katPlaatje, maakGrond, maakGras, tekenTekst, KLEUR } from './spel-sprites.js';
 import { geluid } from './spel-geluid.js';
-import { bewaarOogst, eigenKatten, KATTEN, toonMarkt, toonBakkerij } from './spel-markt.js';
+import { bewaarOogst, eigenKatten, KATTEN } from './spel-markt.js';
 import { haalTop, stuurScore, vulLijst, laatsteNaam, bewaarNaam } from '../shared/highscore.js';
 
 // ---------- Instellingen ----------
@@ -58,7 +58,7 @@ const recordEl = $('record');
 const levelEl = $('level');
 const hartjesEl = $('hartjes');
 const meldingEl = $('melding');
-const schermen = { start: $('start'), pauze: $('pauze'), einde: $('einde'), markt: $('markt'), bakkerij: $('bakkerij') };
+const schermen = { start: $('start'), pauze: $('pauze'), einde: $('einde') };
 
 const gras = maakGras(W, H);
 const grond = maakGrond(VAK);
@@ -955,25 +955,6 @@ const hartUrl = plaatjeUrl('hartje');
 
 $('startKnop').addEventListener('click', start);
 
-// De markt en de bakkerij openen vanaf het startscherm en na een potje, en linken naar elkaar.
-// Terug gaat naar waar je vandaan kwam.
-const GEWAS_NAMEN = Object.fromEntries(Object.entries(GEWASSEN).map(([k, g]) => [k, { naam: g.naam, meer: g.meer }]));
-let winkelTerug = 'start';
-const winkels = {
-  markt: () => toonMarkt($('marktInhoud'), GEWAS_NAMEN),
-  bakkerij: () => toonBakkerij($('bakkerijInhoud')),
-};
-for (const [naam, teken] of Object.entries(winkels)) {
-  for (const knop of document.querySelectorAll(`.naar-${naam}`)) {
-    knop.addEventListener('click', () => {
-      winkelTerug = toestand === 'einde' ? 'einde' : 'start';
-      teken();
-      toon(naam);
-      schermen[naam].querySelector('.kader').scrollTop = 0;
-    });
-  }
-}
-for (const knop of document.querySelectorAll('.scherm .terug')) knop.addEventListener('click', () => toon(winkelTerug));
 $('opnieuwKnop').addEventListener('click', start);
 $('verderKnop').addEventListener('click', hervat);
 $('stopKnop').addEventListener('click', () => {
