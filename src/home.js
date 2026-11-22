@@ -41,13 +41,11 @@ function render(root) {
   tuin.append(sprite('kiemplant', { grootte: 40 }), tuinTekst);
   keuzes.append(spel, tuin);
 
+  // Laatste actie uit de moestuinplanner, alleen als die er is
   const weetjes = el('section', 'kader weetjes');
-  const highscore = lees('spel.highscore', 0);
-  weetjes.append(
-    el('p', '', highscore > 0 ? `Jouw highscore: ${highscore}` : 'Nog geen highscore. Durf jij?'),
-  );
   const laatste = lees('moestuin.laatsteActie', null);
   if (laatste?.tekst) weetjes.append(el('p', '', `Laatst in de tuin: ${laatste.tekst}`));
+  else weetjes.hidden = true;
 
   // Online top 5 van het spel; verschijnt alleen als die er is
   const online = el('section', 'kader weetjes online-top');
