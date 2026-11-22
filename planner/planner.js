@@ -1,17 +1,43 @@
 import { lees, bewaar } from '../shared/opslag.js';
-import { PALET, PLANTEN, PLANT, relatie } from './plants.js';
+import { PALET, PLANTEN, PLANT, MAANDTAKEN, relatie } from './plants.js';
+import { STARTTUIN } from './starttuin.js';
 
-// ---------- Pixelart: sprites en tegels als plaatjes ----------
+// Moestuinplanner in de stijl van een woninginrichter: een plattegrond in echte centimeters
+// waarop je bakken, paden, een kas en plantvakken sleept, vergroot en draait.
+
+const SVGNS = 'http://www.w3.org/2000/svg';
+const SLEUTEL = 'moestuin.ontwerp';
+const MAANDEN = ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
+const MAAND_LANG = ['januari', 'februari', 'maart', 'april', 'mei', 'juni', 'juli', 'augustus', 'september', 'oktober', 'november', 'december'];
+const DEZE_MAAND = new Date().getMonth() + 1;
+
+// ---------- Catalogus van tuinonderdelen (maten in cm) ----------
+
+const ONDERDELEN = {
+  gazon: { naam: 'Grasveld', w: 300, h: 300, laag: 0, min: 50 },
+  pad: { naam: 'Tegelpad', w: 60, h: 300, laag: 1, min: 30 },
+  grind: { naam: 'Grindpad', w: 80, h: 300, laag: 1, min: 30 },
+  bed: { naam: 'Groentebed', w: 120, h: 300, laag: 2, min: 30, beplantbaar: true },
+  bak: { naam: 'Moestuinbak', w: 120, h: 240, laag: 2, min: 40, beplantbaar: true, rand: 8 },
+  kas: { naam: 'Kas', w: 250, h: 300, laag: 3, min: 120, beplantbaar: true, rand: 4 },
+  schuur: { naam: 'Schuurtje', w: 200, h: 240, laag: 3, min: 100 },
+  compost: { naam: 'Compostbak', w: 100, h: 100, laag: 3, min: 60 },
+  regenton: { naam: 'Regenton', w: 60, h: 60, laag: 3, min: 40, rond: true },
+  bank: { naam: 'Bankje', w: 150, h: 50, laag: 3, min: 80 },
+  boom: { naam: 'Fruitboom', w: 300, h: 300, laag: 5, min: 100, rond: true },
+};
+const CATALOGUS_INRICHTING = ['bak', 'bed', 'pad', 'grind', 'gazon', 'kas', 'schuur', 'compost', 'regenton', 'bank', 'boom'];
+
+// ---------- Pixelart-sprites van de planten ----------
 
 const spriteCache = new Map();
 function spriteUrl(id) {
   if (spriteCache.has(id)) return spriteCache.get(id);
-  const raster = PLANT[id].sprite;
   const c = document.createElement('canvas');
   c.width = 8;
   c.height = 8;
   const ctx = c.getContext('2d');
-  raster.forEach((rij, y) => {
+  PLANT[id].sprite.forEach((rij, y) => {
     [...rij].forEach((teken, x) => {
       if (PALET[teken]) {
         ctx.fillStyle = PALET[teken];
@@ -23,154 +49,15 @@ function spriteUrl(id) {
   spriteCache.set(id, url);
   return url;
 }
-
 function spriteImg(id, grootte) {
   const img = document.createElement('img');
-  img.className = 'sprite';
   img.src = spriteUrl(id);
   img.alt = '';
-  if (grootte) {
-    img.width = grootte;
-    img.height = grootte;
-  }
+  if (grootte) { img.width = grootte; img.height = grootte; }
   return img;
 }
 
-// Vaste "willekeur" zodat de tegels er elke keer hetzelfde uitzien.
-function rng(zaad) {
-  let s = zaad;
-  return () => {
-    s = (s * 1103515245 + 12345) & 0x7fffffff;
-    return s / 0x7fffffff;
-  };
-}
-
-const css = getComputedStyle(document.documentElement);
-const kleur = (naam, standaard) => css.getPropertyValue(naam).trim() || standaard;
-const K = {
-  gras: kleur('--gras', '#63c74d'),
-  grasDonker: kleur('--gras-donker', '#3e8948'),
-  grasLicht: '#8fe06b',
-  grond: kleur('--grond', '#8f563b'),
-  grondDonker: kleur('--grond-donker', '#5d3a28'),
-  grondLicht: '#a86c4a',
-  pad: kleur('--pad', '#e4a672'),
-  padDonker: '#b97d4e',
-  padLicht: '#f3c9a0',
-};
-
-const VARIANTEN = 3;
-function maakTegel(soort, variant) {
-  const c = document.createElement('canvas');
-  c.width = 8;
-  c.height = 8;
-  const ctx = c.getContext('2d');
-  const r = rng(soort.length * 97 + variant * 31 + 7);
-  const px = (x, y, k) => {
-    ctx.fillStyle = k;
-    ctx.fillRect(x, y, 1, 1);
-  };
-  if (soort === 'gras') {
-    ctx.fillStyle = K.gras;
-    ctx.fillRect(0, 0, 8, 8);
-    for (let i = 0; i < 5; i++) {
-      const x = Math.floor(r() * 8);
-      const y = Math.floor(r() * 7) + 1;
-      px(x, y, K.grasDonker);
-      px(x, y - 1, K.grasDonker);
-    }
-    for (let i = 0; i < 2; i++) px(Math.floor(r() * 8), Math.floor(r() * 8), K.grasLicht);
-  } else if (soort === 'grond') {
-    ctx.fillStyle = K.grond;
-    ctx.fillRect(0, 0, 8, 8);
-    // Voren: twee donkere lijnen
-    for (let x = 0; x < 8; x++) {
-      px(x, 2, K.grondDonker);
-      px(x, 6, K.grondDonker);
-    }
-    for (let i = 0; i < 4; i++) px(Math.floor(r() * 8), Math.floor(r() * 8), K.grondLicht);
-  } else {
-    ctx.fillStyle = K.pad;
-    ctx.fillRect(0, 0, 8, 8);
-    // Steentjes
-    for (let i = 0; i < 3; i++) {
-      const x = Math.floor(r() * 7);
-      const y = Math.floor(r() * 7);
-      px(x, y, K.padLicht);
-      px(x + 1, y, K.padLicht);
-      px(x, y + 1, K.padDonker);
-      px(x + 1, y + 1, K.padDonker);
-    }
-    for (let i = 0; i < 3; i++) px(Math.floor(r() * 8), Math.floor(r() * 8), K.padDonker);
-  }
-  return c.toDataURL();
-}
-
-const TEGELS = {};
-for (const soort of ['gras', 'grond', 'pad']) {
-  TEGELS[soort] = Array.from({ length: VARIANTEN }, (_, v) => `url(${maakTegel(soort, v)})`);
-}
-
-// ---------- Tuin-data ----------
-
-const SLEUTEL = 'moestuin.tuin';
-const MIN_K = 4, MAX_K = 12, MIN_R = 4, MAX_R = 16;
-const MAANDEN = ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
-const MAAND_LANG = ['januari', 'februari', 'maart', 'april', 'mei', 'juni', 'juli', 'augustus', 'september', 'oktober', 'november', 'december'];
-const DEZE_MAAND = new Date().getMonth() + 1;
-
-function starttuin() {
-  const kolommen = 8;
-  const rijen = 10;
-  const cellen = [];
-  for (let r = 0; r < rijen; r++) {
-    for (let k = 0; k < kolommen; k++) {
-      let g = 'gras';
-      const binnen = k >= 1 && k <= 6 && r >= 1 && r <= 8;
-      if (binnen) g = r === 4 || r === 5 ? 'pad' : 'grond';
-      if (binnen && (k === 1 || k === 6) && (r === 4 || r === 5)) g = 'pad';
-      cellen.push({ g, p: null });
-    }
-  }
-  return { kolommen, rijen, cellen };
-}
-
-function geldig(t) {
-  return (
-    t && Number.isInteger(t.kolommen) && Number.isInteger(t.rijen) &&
-    Array.isArray(t.cellen) && t.cellen.length === t.kolommen * t.rijen
-  );
-}
-
-let tuin = lees(SLEUTEL, null);
-if (!geldig(tuin)) tuin = starttuin();
-// Onbekende planten (bijv. uit een oudere versie) weghalen
-tuin.cellen.forEach((c) => { if (c.p && !PLANT[c.p]) c.p = null; });
-
-const geschiedenis = [];
-function onthoud() {
-  geschiedenis.push(JSON.stringify(tuin));
-  if (geschiedenis.length > 50) geschiedenis.shift();
-  knopTerug.disabled = false;
-}
-function opslaan() {
-  bewaar(SLEUTEL, tuin);
-}
-
-// ---------- Elementen ----------
-
-const elTuin = document.getElementById('tuin');
-const elHint = document.getElementById('hint');
-const knopTerug = document.getElementById('ongedaan');
-const plantIcoon = document.getElementById('plant-icoon');
-const blad = document.getElementById('blad');
-const bladAchter = document.getElementById('blad-achtergrond');
-const bladTitel = document.getElementById('blad-titel');
-const bladInhoud = document.getElementById('blad-inhoud');
-
-let tool = 'grond';
-let gekozenPlant = lees('moestuin.gekozenPlant', 'tomaat');
-if (!PLANT[gekozenPlant]) gekozenPlant = 'tomaat';
+// ---------- Hulpjes ----------
 
 function el(tag, klasse, tekst) {
   const e = document.createElement(tag);
@@ -178,273 +65,806 @@ function el(tag, klasse, tekst) {
   if (tekst !== undefined) e.textContent = tekst;
   return e;
 }
-
-function hint(tekst) {
-  elHint.textContent = tekst;
+function s(tag, attrs = {}, ouder) {
+  const e = document.createElementNS(SVGNS, tag);
+  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+  if (ouder) ouder.append(e);
+  return e;
 }
+const klem = (v, a, b) => Math.max(a, Math.min(b, v));
+const rond = (v, stap) => Math.round(v / stap) * stap;
+const meter = (cm) => (cm >= 100 ? `${(cm / 100).toLocaleString('nl-NL', { maximumFractionDigits: 2 })} m` : `${cm} cm`);
+let volgnummer = 0;
+const nieuwId = () => `i${Date.now().toString(36)}${(volgnummer++).toString(36)}`;
 
-// ---------- Tekenen van de tuin ----------
+// ---------- Ontwerp-data ----------
 
-function celGrootte() {
-  const app = document.getElementById('app');
-  const stijl = getComputedStyle(app);
-  const beschikbaar = app.clientWidth - parseFloat(stijl.paddingLeft) - parseFloat(stijl.paddingRight) - 8;
-  return Math.max(24, Math.min(56, Math.floor(beschikbaar / tuin.kolommen)));
-}
-
-function buren(i) {
-  const k = i % tuin.kolommen;
-  const r = Math.floor(i / tuin.kolommen);
-  const uit = [];
-  for (let dr = -1; dr <= 1; dr++) {
-    for (let dk = -1; dk <= 1; dk++) {
-      if (!dr && !dk) continue;
-      const nk = k + dk;
-      const nr = r + dr;
-      if (nk < 0 || nr < 0 || nk >= tuin.kolommen || nr >= tuin.rijen) continue;
-      uit.push(nr * tuin.kolommen + nk);
-    }
-  }
-  return uit;
-}
-
-function heeftRuzie(i) {
-  const p = tuin.cellen[i].p;
-  if (!p) return false;
-  return buren(i).some((j) => relatie(p, tuin.cellen[j].p) === 'slecht');
-}
-
-let celEls = [];
-function tekenTuin() {
-  elTuin.style.setProperty('--kolommen', tuin.kolommen);
-  elTuin.style.setProperty('--cel', `${celGrootte()}px`);
-  elTuin.replaceChildren();
-  celEls = tuin.cellen.map((_, i) => {
-    const d = el('div', 'cel');
-    elTuin.append(d);
-    return d;
-  });
-  tuin.cellen.forEach((_, i) => tekenCel(i));
-}
-
-function tekenCel(i, nieuw = false) {
-  const c = tuin.cellen[i];
-  const d = celEls[i];
-  d.style.backgroundImage = TEGELS[c.g][(i * 7 + Math.floor(i / tuin.kolommen) * 3) % VARIANTEN];
-  const img = d.querySelector('img');
-  if (c.p) {
-    if (!img || img.dataset.p !== c.p) {
-      const nieuwImg = spriteImg(c.p);
-      nieuwImg.dataset.p = c.p;
-      img ? img.replaceWith(nieuwImg) : d.append(nieuwImg);
-      d.classList.toggle('nieuw', nieuw);
-    }
-  } else if (img) {
-    img.remove();
-  }
-  d.classList.toggle('ruzie', heeftRuzie(i));
-}
-
-function tekenRuzies() {
-  celEls.forEach((d, i) => d.classList.toggle('ruzie', heeftRuzie(i)));
-}
-
-// ---------- Gereedschap ----------
-
-function kiesTool(nieuw) {
-  tool = nieuw;
-  document.querySelectorAll('.tool').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.tool === tool)));
-  const teksten = {
-    grond: 'Veeg over de tuin om grond te maken. Daar kun je planten zetten.',
-    pad: 'Veeg om een pad te leggen.',
-    gras: 'Veeg om gras te maken.',
-    plant: `Tik of veeg om ${PLANT[gekozenPlant].naam.toLowerCase()} te planten.`,
-    gum: 'Tik op een plant om hem weg te halen.',
-    kijk: 'Tik op een plant om te zien hoe je hem verzorgt.',
+function voorbeeldtuin() {
+  return {
+    breedte: STARTTUIN.breedte,
+    lengte: STARTTUIN.lengte,
+    items: STARTTUIN.items.map((i) => ({ id: nieuwId(), ...i })),
   };
-  hint(teksten[tool]);
 }
 
-document.querySelectorAll('.tool').forEach((b) => {
-  b.addEventListener('click', () => {
-    if (b.dataset.tool === 'plant') openPlantkeuze();
-    else kiesTool(b.dataset.tool);
+function geldig(o) {
+  return o && Number.isFinite(o.breedte) && Number.isFinite(o.lengte) && Array.isArray(o.items);
+}
+
+let ontwerp = lees(SLEUTEL, null);
+if (!geldig(ontwerp)) ontwerp = voorbeeldtuin();
+ontwerp.items = ontwerp.items.filter((i) => (i.t === 'plant' ? PLANT[i.p] : ONDERDELEN[i.t]));
+
+const geschiedenis = [];
+function onthoud(stand = JSON.stringify(ontwerp)) {
+  geschiedenis.push(stand);
+  if (geschiedenis.length > 60) geschiedenis.shift();
+  knopTerug.disabled = false;
+}
+function opslaan() {
+  bewaar(SLEUTEL, ontwerp);
+}
+
+// ---------- Elementen ----------
+
+const svg = document.getElementById('plan');
+const defs = document.getElementById('defs');
+const wereld = document.getElementById('wereld');
+const laagTuin = document.getElementById('laag-tuin');
+const laagItems = document.getElementById('laag-items');
+const laagBoven = document.getElementById('laag-boven');
+const doek = document.getElementById('doek');
+const elMelding = document.getElementById('melding');
+const knopTerug = document.getElementById('terug');
+const balkHoofd = document.getElementById('balk-hoofd');
+const balkSel = document.getElementById('balk-selectie');
+
+let meldingTimer;
+function meld(tekst) {
+  elMelding.textContent = tekst;
+  elMelding.classList.add('zichtbaar');
+  clearTimeout(meldingTimer);
+  meldingTimer = setTimeout(() => elMelding.classList.remove('zichtbaar'), 2600);
+}
+
+// ---------- Patronen (texturen in centimeters) ----------
+
+function maakPatronen() {
+  const pat = (id, w, h) => s('pattern', { id, width: w, height: h, patternUnits: 'userSpaceOnUse' }, defs);
+
+  let p = pat('p-gras', 40, 40);
+  s('rect', { width: 40, height: 40, fill: '#8cc66b' }, p);
+  [[6, 8], [22, 4], [32, 20], [12, 28], [26, 33]].forEach(([x, y]) =>
+    s('path', { d: `M${x} ${y + 5}l2-5l2 5`, stroke: '#6fae52', 'stroke-width': 1.4, fill: 'none' }, p));
+
+  p = pat('p-gazon', 60, 60);
+  s('rect', { width: 60, height: 60, fill: '#9fd57c' }, p);
+  s('rect', { width: 30, height: 60, fill: '#93cc70' }, p);
+
+  p = pat('p-grond', 24, 24);
+  s('rect', { width: 24, height: 24, fill: '#8f5d3f' }, p);
+  [[4, 5, '#7a4c32'], [15, 3, '#a26e4d'], [9, 14, '#7a4c32'], [19, 17, '#a26e4d'], [3, 20, '#a26e4d']].forEach(([x, y, k]) =>
+    s('circle', { cx: x, cy: y, r: 1.6, fill: k }, p));
+
+  p = pat('p-tegel', 30, 30);
+  s('rect', { width: 30, height: 30, fill: '#cdbfa8' }, p);
+  s('rect', { x: 1, y: 1, width: 28, height: 28, rx: 1.5, fill: '#e0d4c0' }, p);
+
+  p = pat('p-grind', 14, 14);
+  s('rect', { width: 14, height: 14, fill: '#ddd6c6' }, p);
+  [[3, 3, '#bfb6a3'], [10, 5, '#c9c1af'], [6, 10, '#b5ab97'], [12, 12, '#cbc3b1']].forEach(([x, y, k]) =>
+    s('circle', { cx: x, cy: y, r: 1.8, fill: k }, p));
+
+  p = pat('p-hout', 12, 200);
+  s('rect', { width: 12, height: 200, fill: '#b98552' }, p);
+  s('rect', { width: 1.2, height: 200, fill: '#9c6c3f' }, p);
+}
+
+const plantPatronen = new Set();
+function plantPatroon(id) {
+  const naam = `pp-${id}`;
+  if (plantPatronen.has(id)) return naam;
+  plantPatronen.add(id);
+  const r = PLANT[id].ruimte;
+  const p = s('pattern', { id: naam, width: r, height: r, patternUnits: 'userSpaceOnUse' }, defs);
+  s('circle', { cx: r / 2, cy: r / 2, r: r * 0.46, fill: '#63c74d', 'fill-opacity': 0.35 }, p);
+  s('image', { href: spriteUrl(id), x: r * 0.15, y: r * 0.15, width: r * 0.7, height: r * 0.7, preserveAspectRatio: 'none' }, p);
+  return naam;
+}
+
+// ---------- Beeld: schuiven en zoomen ----------
+
+const beeld = { x: 0, y: 0, schaal: 1 };
+
+function zetBeeld() {
+  wereld.setAttribute('transform', `translate(${beeld.x} ${beeld.y}) scale(${beeld.schaal})`);
+  tekenBoven();
+}
+
+function passend() {
+  const r = svg.getBoundingClientRect();
+  const marge = 36;
+  beeld.schaal = Math.min((r.width - marge * 2) / ontwerp.breedte, (r.height - marge * 2) / ontwerp.lengte);
+  beeld.x = (r.width - ontwerp.breedte * beeld.schaal) / 2;
+  beeld.y = (r.height - ontwerp.lengte * beeld.schaal) / 2;
+  zetBeeld();
+}
+
+function zoom(factor, cx, cy) {
+  const r = svg.getBoundingClientRect();
+  if (cx === undefined) { cx = r.width / 2; cy = r.height / 2; }
+  const nieuw = klem(beeld.schaal * factor, 0.15, 12);
+  const f = nieuw / beeld.schaal;
+  beeld.x = cx - (cx - beeld.x) * f;
+  beeld.y = cy - (cy - beeld.y) * f;
+  beeld.schaal = nieuw;
+  zetBeeld();
+}
+
+function naarWereld(clientX, clientY) {
+  const r = svg.getBoundingClientRect();
+  return { x: (clientX - r.left - beeld.x) / beeld.schaal, y: (clientY - r.top - beeld.y) / beeld.schaal };
+}
+
+// ---------- Tekenen ----------
+
+function tekenTuin() {
+  laagTuin.replaceChildren();
+  const { breedte: B, lengte: L } = ontwerp;
+  s('rect', { x: -12, y: -12, width: B + 24, height: L + 24, rx: 6, fill: '#7a5a3a' }, laagTuin);
+  s('rect', { width: B, height: L, fill: 'url(#p-gras)' }, laagTuin);
+  const raster = s('g', { stroke: '#ffffff', 'stroke-opacity': 0.35, 'vector-effect': 'non-scaling-stroke' }, laagTuin);
+  for (let x = 100; x < B; x += 100) s('line', { x1: x, y1: 0, x2: x, y2: L, 'vector-effect': 'non-scaling-stroke' }, raster);
+  for (let y = 100; y < L; y += 100) s('line', { x1: 0, y1: y, x2: B, y2: y, 'vector-effect': 'non-scaling-stroke' }, raster);
+}
+
+function tekenItem(item) {
+  const g = s('g', { transform: `translate(${item.x} ${item.y})`, 'data-id': item.id });
+  const { w, h } = item;
+  const lang = h >= w;
+  switch (item.t) {
+    case 'gazon':
+      s('rect', { width: w, height: h, fill: 'url(#p-gazon)', rx: 4 }, g);
+      break;
+    case 'pad':
+      s('rect', { width: w, height: h, fill: 'url(#p-tegel)' }, g);
+      break;
+    case 'grind':
+      s('rect', { width: w, height: h, fill: 'url(#p-grind)', rx: 6 }, g);
+      break;
+    case 'bed':
+      s('rect', { width: w, height: h, rx: 14, fill: 'url(#p-grond)', stroke: '#6b442c', 'stroke-width': 3 }, g);
+      break;
+    case 'bak': {
+      const r = ONDERDELEN.bak.rand;
+      s('rect', { width: w, height: h, rx: 3, fill: '#b98552', stroke: '#7a5232', 'stroke-width': 2 }, g);
+      s('rect', { x: r, y: r, width: w - 2 * r, height: h - 2 * r, fill: 'url(#p-grond)' }, g);
+      break;
+    }
+    case 'kas': {
+      s('rect', { width: w, height: h, fill: 'url(#p-grond)' }, g);
+      s('rect', { width: w, height: h, fill: '#e6f6ff', 'fill-opacity': 0.45, stroke: '#7fa8bf', 'stroke-width': 4 }, g);
+      const lijnen = s('g', { stroke: '#9cc2d6', 'stroke-width': 1.5, 'pointer-events': 'none' }, g);
+      if (lang) {
+        for (let y = 60; y < h; y += 60) s('line', { x1: 0, y1: y, x2: w, y2: y }, lijnen);
+        s('line', { x1: w / 2, y1: 0, x2: w / 2, y2: h, stroke: '#7fa8bf', 'stroke-width': 3 }, lijnen);
+      } else {
+        for (let x = 60; x < w; x += 60) s('line', { x1: x, y1: 0, x2: x, y2: h }, lijnen);
+        s('line', { x1: 0, y1: h / 2, x2: w, y2: h / 2, stroke: '#7fa8bf', 'stroke-width': 3 }, lijnen);
+      }
+      break;
+    }
+    case 'schuur': {
+      s('rect', { width: w, height: h, fill: '#8a4b38', stroke: '#5a2f22', 'stroke-width': 3 }, g);
+      if (lang) s('rect', { x: w / 2, width: w / 2, height: h, fill: '#a35a43' }, g);
+      else s('rect', { y: h / 2, width: w, height: h / 2, fill: '#a35a43' }, g);
+      const lijnen = s('g', { stroke: '#6e3a2b', 'stroke-width': 1.5 }, g);
+      if (lang) for (let y = 20; y < h; y += 20) s('line', { x1: 0, y1: y, x2: w, y2: y }, lijnen);
+      else for (let x = 20; x < w; x += 20) s('line', { x1: x, y1: 0, x2: x, y2: h }, lijnen);
+      if (lang) s('line', { x1: w / 2, y1: 0, x2: w / 2, y2: h, stroke: '#4a271c', 'stroke-width': 4 }, g);
+      else s('line', { x1: 0, y1: h / 2, x2: w, y2: h / 2, stroke: '#4a271c', 'stroke-width': 4 }, g);
+      break;
+    }
+    case 'compost':
+      s('rect', { width: w, height: h, rx: 3, fill: 'url(#p-hout)', stroke: '#7a5232', 'stroke-width': 3 }, g);
+      s('rect', { x: 10, y: 10, width: w - 20, height: h - 20, rx: 4, fill: '#5d3d26' }, g);
+      s('circle', { cx: w * 0.4, cy: h * 0.45, r: Math.min(w, h) * 0.08, fill: '#7fae4f' }, g);
+      s('circle', { cx: w * 0.62, cy: h * 0.6, r: Math.min(w, h) * 0.06, fill: '#e3a33b' }, g);
+      break;
+    case 'regenton':
+      s('circle', { cx: w / 2, cy: h / 2, r: w / 2, fill: '#3e6b48', stroke: '#26452e', 'stroke-width': 4 }, g);
+      s('circle', { cx: w / 2, cy: h / 2, r: w / 2 - 8, fill: '#6fb0d8' }, g);
+      s('circle', { cx: w * 0.4, cy: h * 0.4, r: w * 0.08, fill: '#a9d6f0' }, g);
+      break;
+    case 'bank': {
+      s('rect', { width: w, height: h, rx: 4, fill: '#c08a55', stroke: '#7a5232', 'stroke-width': 2 }, g);
+      const lijnen = s('g', { stroke: '#8d6038', 'stroke-width': 1.5 }, g);
+      if (w >= h) for (let y = h / 4; y < h; y += h / 4) s('line', { x1: 3, y1: y, x2: w - 3, y2: y }, lijnen);
+      else for (let x = w / 4; x < w; x += w / 4) s('line', { x1: x, y1: 3, x2: x, y2: h - 3 }, lijnen);
+      break;
+    }
+    case 'boom': {
+      const kroon = s('g', { 'pointer-events': 'none' }, g);
+      s('circle', { cx: w / 2, cy: h / 2, r: w / 2, fill: '#3e8948', 'fill-opacity': 0.45, stroke: '#2d6a36', 'stroke-width': 3 }, kroon);
+      [[0.35, 0.35, 0.22], [0.66, 0.4, 0.2], [0.45, 0.68, 0.2]].forEach(([fx, fy, fr]) =>
+        s('circle', { cx: w * fx, cy: h * fy, r: w * fr, fill: '#58a24f', 'fill-opacity': 0.45 }, kroon));
+      [[0.3, 0.55], [0.7, 0.62], [0.58, 0.25]].forEach(([fx, fy]) =>
+        s('circle', { cx: w * fx, cy: h * fy, r: 7, fill: '#e43b44' }, kroon));
+      s('circle', { cx: w / 2, cy: h / 2, r: Math.max(18, w * 0.08), fill: '#7a5232', stroke: '#4f3420', 'stroke-width': 3 }, g);
+      break;
+    }
+    case 'plant': {
+      s('rect', { width: w, height: h, rx: 4, fill: '#7a4c32', 'fill-opacity': 0.35 }, g);
+      s('rect', { width: w, height: h, rx: 4, fill: `url(#${plantPatroon(item.p)})`, stroke: '#2f6e37', 'stroke-width': 1.5, 'stroke-dasharray': '6 4' }, g);
+      break;
+    }
+  }
+  // Naam op grote onderdelen
+  const label = { kas: 'Kas', schuur: 'Schuur', compost: 'Compost' }[item.t];
+  if (label && Math.min(w, h) >= 80) {
+    const fs = Math.min(24, Math.min(w, h) / 5);
+    const bw = label.length * fs * 0.62 + fs * 1.2;
+    const ly = item.t === 'kas' ? 0 : h / 2;
+    const pil = s('g', { 'pointer-events': 'none' }, g);
+    s('rect', { x: w / 2 - bw / 2, y: ly - fs * 0.9, width: bw, height: fs * 1.8, rx: fs * 0.9, fill: '#ffffff', 'fill-opacity': 0.92 }, pil);
+    const t = s('text', { x: w / 2, y: ly, class: 'label-tekst', 'font-size': fs }, pil);
+    t.textContent = label;
+  }
+  return g;
+}
+
+function gesorteerd() {
+  const laag = (i) => (i.t === 'plant' ? 4 : ONDERDELEN[i.t].laag);
+  return [...ontwerp.items].sort((a, b) => laag(a) - laag(b));
+}
+
+function tekenItems() {
+  laagItems.replaceChildren(...gesorteerd().map(tekenItem));
+  tekenBoven();
+}
+
+function tekenItemOpnieuw(item) {
+  const oud = laagItems.querySelector(`[data-id="${item.id}"]`);
+  if (oud) oud.replaceWith(tekenItem(item));
+  else tekenItems();
+}
+
+// Dingen die niet kloppen in het ontwerp: planten buiten een bak, over elkaar liggende vakken of gebouwen.
+function snijdt(a, b) {
+  const dx = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
+  const dy = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
+  return dx > 1 && dy > 1;
+}
+function bevat(a, b) {
+  return b.x >= a.x - 1 && b.y >= a.y - 1 && b.x + b.w <= a.x + a.w + 1 && b.y + b.h <= a.y + a.h + 1;
+}
+function probleem(i) {
+  if (i.t === 'plant') {
+    const naam = PLANT[i.p].naam.toLowerCase();
+    if (!ontwerp.items.some((c) => ONDERDELEN[c.t]?.beplantbaar && bevat(c, i))) return `${naam} staat niet (helemaal) in een bak, bed of kas`;
+    if (ontwerp.items.some((j) => j !== i && j.t === 'plant' && snijdt(i, j))) return `${naam} ligt over een ander plantvak`;
+    return null;
+  }
+  const o = ONDERDELEN[i.t];
+  if (o.laag < 2 || o.laag > 3) return null;
+  const naam = o.naam.toLowerCase();
+  const stoort = ontwerp.items.find((j) => j !== i && j.t !== 'plant' && ONDERDELEN[j.t].laag >= 2 && ONDERDELEN[j.t].laag <= 3 && snijdt(i, j) && !bevat(i, j) && !bevat(j, i));
+  if (stoort) return `${naam} ligt over ${ONDERDELEN[stoort.t].naam.toLowerCase()}`;
+  const pad = ontwerp.items.find((j) => ['pad', 'grind'].includes(j.t) && snijdt(i, j));
+  if (pad) return `${naam} staat op een pad`;
+  return null;
+}
+
+// Plantvakken die naast een slechte buur liggen (binnen 20 cm)
+function slechteBuren(item) {
+  if (item.t !== 'plant') return [];
+  return ontwerp.items.filter((j) => j !== item && j.t === 'plant' && relatie(item.p, j.p) === 'slecht' && dichtbij(item, j, 20));
+}
+function burenVan(item) {
+  return ontwerp.items.filter((j) => j !== item && j.t === 'plant' && j.p !== item.p && dichtbij(item, j, 20));
+}
+function dichtbij(a, b, afstand) {
+  return a.x - afstand < b.x + b.w && b.x - afstand < a.x + a.w && a.y - afstand < b.y + b.h && b.y - afstand < a.y + a.h;
+}
+
+function tekenBoven() {
+  laagBoven.replaceChildren();
+  const k = 1 / beeld.schaal; // 1 schermpixel in cm
+  const { breedte: B, lengte: L } = ontwerp;
+
+  // Maatvoering van de hele tuin
+  const maat = s('g', {}, laagBoven);
+  const t1 = s('text', { x: B / 2, y: -22 * k, class: 'maat-tekst', 'font-size': 12 * k }, maat);
+  t1.textContent = meter(B);
+  const t2 = s('text', { x: -22 * k, y: L / 2, class: 'maat-tekst', 'font-size': 12 * k, transform: `rotate(-90 ${-22 * k} ${L / 2})` }, maat);
+  t2.textContent = meter(L);
+
+  // Waarschuwingen voor slechte buren
+  ontwerp.items.forEach((i) => {
+    if (!slechteBuren(i).length) return;
+    const g = s('g', { transform: `translate(${i.x + i.w} ${i.y})`, 'pointer-events': 'none' }, laagBoven);
+    s('circle', { r: 9 * k, fill: '#e43b44', stroke: '#fff', 'stroke-width': 2 * k }, g);
+    const t = s('text', { class: 'maat-tekst', 'font-size': 12 * k, fill: '#fff', style: 'fill:#fff' }, g);
+    t.textContent = '!';
   });
-});
-document.querySelectorAll('.tegel-icoon').forEach((s) => { s.style.backgroundImage = TEGELS[s.dataset.g][0]; });
 
-function zetPlantIcoon() {
-  plantIcoon.src = spriteUrl(gekozenPlant);
-  plantIcoon.alt = PLANT[gekozenPlant].naam;
+  // Plantnamen op de vakken, ook als de plattegrond ver is ingezoomd of uitgezoomd
+  ontwerp.items.filter((i) => i.t === 'plant').forEach((i) => {
+    const naam = PLANT[i.p].naam;
+    const breed = i.w * beeld.schaal;
+    if (breed < 34 || i.h * beeld.schaal < 18) return;
+    const tekens = Math.min(naam.length, Math.floor((breed - 10) / 6.6));
+    if (tekens < 3) return;
+    const tekst = tekens < naam.length ? `${naam.slice(0, tekens - 1)}.` : naam;
+    const g = s('g', { transform: `translate(${i.x + i.w / 2} ${i.y + 11 * k})`, 'pointer-events': 'none' }, laagBoven);
+    s('rect', { x: -(tekst.length * 3.3 + 5) * k, y: -8 * k, width: (tekst.length * 6.6 + 10) * k, height: 16 * k, rx: 8 * k, fill: '#ffffff', 'fill-opacity': 0.9 }, g);
+    const t = s('text', { class: 'maat-tekst', 'font-size': 10.5 * k }, g);
+    t.textContent = tekst;
+  });
+
+  // Oranje waarschuwing bij dingen die niet kloppen
+  ontwerp.items.forEach((i) => {
+    if (!probleem(i)) return;
+    const g = s('g', { transform: `translate(${i.x} ${i.y})`, 'pointer-events': 'none' }, laagBoven);
+    s('circle', { r: 9 * k, fill: '#f2a516', stroke: '#fff', 'stroke-width': 2 * k }, g);
+    const t = s('text', { class: 'maat-tekst', 'font-size': 12 * k, style: 'fill:#233024' }, g);
+    t.textContent = '!';
+  });
+
+  // Selectie met greep om te vergroten
+  const sel = gekozen();
+  if (sel) {
+    s('rect', {
+      x: sel.x, y: sel.y, width: sel.w, height: sel.h,
+      fill: 'none', stroke: '#f2a516', 'stroke-width': 3 * k, 'stroke-dasharray': `${8 * k} ${5 * k}`, 'pointer-events': 'none',
+    }, laagBoven);
+    const label = s('g', { transform: `translate(${sel.x + sel.w / 2} ${sel.y - 16 * k})`, 'pointer-events': 'none' }, laagBoven);
+    const tekst = `${meter(sel.w)} × ${meter(sel.h)}`;
+    s('rect', { x: -tekst.length * 3.6 * k - 8 * k, y: -11 * k, width: tekst.length * 7.2 * k + 16 * k, height: 22 * k, rx: 11 * k, fill: '#233024' }, label);
+    const t = s('text', { class: 'maat-tekst', 'font-size': 12 * k, style: 'fill:#fff' }, label);
+    t.textContent = tekst;
+    const greep = s('g', { transform: `translate(${sel.x + sel.w} ${sel.y + sel.h})`, 'data-greep': '1' }, laagBoven);
+    s('circle', { r: 22 * k, fill: 'transparent' }, greep);
+    s('circle', { r: 11 * k, fill: '#fff', stroke: '#f2a516', 'stroke-width': 3 * k }, greep);
+    s('path', { d: `M${-4 * k} ${4 * k}L${4 * k} ${-4 * k}`, stroke: '#233024', 'stroke-width': 2 * k }, greep);
+  }
 }
 
-// Past een cel aan volgens het huidige gereedschap. Geeft true als er iets veranderde.
-function pasToe(i) {
-  const c = tuin.cellen[i];
-  if (tool === 'grond' || tool === 'pad' || tool === 'gras') {
-    if (c.g === tool && (tool === 'grond' || !c.p)) return false;
-    c.g = tool;
-    if (tool !== 'grond') c.p = null;
-    return true;
-  }
-  if (tool === 'plant') {
-    if (c.p === gekozenPlant) return false;
-    c.p = gekozenPlant;
-    c.g = 'grond';
-    return true;
-  }
-  if (tool === 'gum') {
-    if (!c.p) return false;
-    c.p = null;
-    return true;
-  }
-  return false;
+// ---------- Selectie ----------
+
+let selectieId = null;
+const gekozen = () => ontwerp.items.find((i) => i.id === selectieId) || null;
+const naamVan = (i) => (i.t === 'plant' ? PLANT[i.p].naam : ONDERDELEN[i.t].naam);
+
+// Planten die in een bak, bed of kas staan, gaan mee als je die verplaatst, kopieert, draait of verwijdert.
+function inhoud(c) {
+  if (!ONDERDELEN[c.t]?.beplantbaar) return [];
+  return ontwerp.items.filter((j) => j.t === 'plant' && j.x >= c.x - 1 && j.y >= c.y - 1 && j.x + j.w <= c.x + c.w + 1 && j.y + j.h <= c.y + c.h + 1);
 }
 
-function celOnder(e) {
-  const rect = elTuin.getBoundingClientRect();
-  const cel = rect.width / tuin.kolommen;
-  const k = Math.floor((e.clientX - rect.left) / cel);
-  const r = Math.floor((e.clientY - rect.top) / cel);
-  if (k < 0 || r < 0 || k >= tuin.kolommen || r >= tuin.rijen) return -1;
-  return r * tuin.kolommen + k;
+function aantalPlanten(i) {
+  const r = PLANT[i.p].ruimte;
+  return Math.max(1, Math.floor((i.w + 1) / r)) * Math.max(1, Math.floor((i.h + 1) / r));
 }
 
-let streek = null; // { veranderd, laatste }
+function kies(id) {
+  selectieId = id;
+  const sel = gekozen();
+  balkHoofd.hidden = !!sel;
+  balkSel.hidden = !sel;
+  if (sel) {
+    document.getElementById('sel-naam').textContent = naamVan(sel);
+    werkSelectieMaatBij();
+    document.getElementById('sel-beplant').hidden = !ONDERDELEN[sel.t]?.beplantbaar;
+    document.getElementById('sel-info').hidden = sel.t !== 'plant';
+    document.getElementById('sel-draai').hidden = !!ONDERDELEN[sel.t]?.rond || sel.w === sel.h;
+  }
+  tekenBoven();
+}
 
-elTuin.addEventListener('pointerdown', (e) => {
-  const i = celOnder(e);
-  if (i < 0) return;
-  e.preventDefault();
-  if (tool === 'kijk') {
-    const p = tuin.cellen[i].p;
-    if (p) openPlantinfo(p, i);
-    else hint('Hier staat nog niets. Kies Plant om iets te zaaien.');
+function werkSelectieMaatBij() {
+  const sel = gekozen();
+  if (!sel) return;
+  let tekst = `${meter(sel.w)} × ${meter(sel.h)}`;
+  if (sel.t === 'plant') {
+    const n = aantalPlanten(sel);
+    tekst = `${n} ${n === 1 ? 'plant' : 'planten'} · ${tekst}`;
+  }
+  else {
+    const erin = inhoud(sel).reduce((a, j) => a + aantalPlanten(j), 0);
+    if (erin) tekst = `${erin} planten erin · ${tekst}`;
+  }
+  document.getElementById('sel-maat').textContent = tekst;
+}
+
+// ---------- Aanwijzer: slepen, vergroten, schuiven, knijpen ----------
+
+const aanwijzers = new Map();
+let gebaar = null;
+
+svg.addEventListener('pointerdown', (e) => {
+  svg.setPointerCapture(e.pointerId);
+  aanwijzers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+  if (aanwijzers.size === 2) {
+    // Overstappen op knijpen om te zoomen
+    if (gebaar?.veranderd) afronden();
+    const [a, b] = [...aanwijzers.values()];
+    gebaar = { soort: 'knijp', afstand: Math.hypot(a.x - b.x, a.y - b.y), midden: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 } };
     return;
   }
-  elTuin.setPointerCapture(e.pointerId);
-  const voor = JSON.stringify(tuin);
-  streek = { voor, veranderd: false, laatste: -1, geplant: 0 };
-  verf(i);
-});
+  if (aanwijzers.size > 2) return;
 
-elTuin.addEventListener('pointermove', (e) => {
-  if (!streek) return;
-  const i = celOnder(e);
-  if (i >= 0) verf(i);
-});
+  const wPunt = naarWereld(e.clientX, e.clientY);
+  const greep = e.target.closest('[data-greep]');
+  const doel = e.target.closest('[data-id]');
+  const voor = JSON.stringify(ontwerp);
 
-function verf(i) {
-  if (i === streek.laatste) return;
-  streek.laatste = i;
-  if (pasToe(i)) {
-    if (!streek.veranderd) {
-      geschiedenis.push(streek.voor);
-      if (geschiedenis.length > 50) geschiedenis.shift();
-      knopTerug.disabled = false;
-    }
-    streek.veranderd = true;
-    if (tool === 'plant') streek.geplant++;
-    tekenCel(i, tool === 'plant');
-    buren(i).forEach((j) => celEls[j].classList.toggle('ruzie', heeftRuzie(j)));
+  if (greep && gekozen()) {
+    const i = gekozen();
+    gebaar = { soort: 'maat', item: i, start: wPunt, w: i.w, h: i.h, voor, veranderd: false };
+  } else if (doel && doel.dataset.id !== selectieId) {
+    // Eerst tikken om te kiezen: een veeg over iets dat nog niet gekozen is, schuift alleen de plattegrond.
+    gebaar = { soort: 'schuif', start: { x: e.clientX, y: e.clientY }, bx: beeld.x, by: beeld.y, bewogen: false, kiesId: doel.dataset.id };
+    svg.classList.add('slepen');
+  } else if (doel) {
+    const i = gekozen();
+    gebaar = { soort: 'sleep', item: i, start: wPunt, x: i.x, y: i.y, voor, veranderd: false, mee: inhoud(i).map((j) => ({ j, x: j.x, y: j.y })) };
+  } else {
+    gebaar = { soort: 'schuif', start: { x: e.clientX, y: e.clientY }, bx: beeld.x, by: beeld.y, bewogen: false };
+    svg.classList.add('slepen');
   }
-}
+});
 
-function eindeStreek() {
-  if (!streek) return;
-  if (streek.veranderd) {
+svg.addEventListener('pointermove', (e) => {
+  if (!aanwijzers.has(e.pointerId) || !gebaar) return;
+  aanwijzers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+  if (gebaar.soort === 'knijp' && aanwijzers.size === 2) {
+    const [a, b] = [...aanwijzers.values()];
+    const afstand = Math.hypot(a.x - b.x, a.y - b.y);
+    const midden = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+    const r = svg.getBoundingClientRect();
+    beeld.x += midden.x - gebaar.midden.x;
+    beeld.y += midden.y - gebaar.midden.y;
+    zoom(afstand / gebaar.afstand, midden.x - r.left, midden.y - r.top);
+    gebaar.afstand = afstand;
+    gebaar.midden = midden;
+    return;
+  }
+
+  if (gebaar.soort === 'schuif') {
+    const dx = e.clientX - gebaar.start.x;
+    const dy = e.clientY - gebaar.start.y;
+    if (Math.hypot(dx, dy) > 4) gebaar.bewogen = true;
+    beeld.x = gebaar.bx + dx;
+    beeld.y = gebaar.by + dy;
+    wereld.setAttribute('transform', `translate(${beeld.x} ${beeld.y}) scale(${beeld.schaal})`);
+    return;
+  }
+
+  const p = naarWereld(e.clientX, e.clientY);
+  const i = gebaar.item;
+  if (gebaar.soort === 'sleep') {
+    const stap = i.t === 'plant' ? 5 : 10;
+    const nx = klem(rond(gebaar.x + p.x - gebaar.start.x, stap), 0, Math.max(0, ontwerp.breedte - i.w));
+    const ny = klem(rond(gebaar.y + p.y - gebaar.start.y, stap), 0, Math.max(0, ontwerp.lengte - i.h));
+    if (nx !== i.x || ny !== i.y) {
+      i.x = nx;
+      i.y = ny;
+      gebaar.veranderd = true;
+      laagItems.querySelector(`[data-id="${i.id}"]`)?.setAttribute('transform', `translate(${i.x} ${i.y})`);
+      gebaar.mee.forEach((m) => {
+        m.j.x = m.x + (nx - gebaar.x);
+        m.j.y = m.y + (ny - gebaar.y);
+        laagItems.querySelector(`[data-id="${m.j.id}"]`)?.setAttribute('transform', `translate(${m.j.x} ${m.j.y})`);
+      });
+      tekenBoven();
+    }
+  } else if (gebaar.soort === 'maat') {
+    const stap = i.t === 'plant' ? PLANT[i.p].ruimte : 10;
+    const min = i.t === 'plant' ? PLANT[i.p].ruimte : ONDERDELEN[i.t].min;
+    let nw = klem(Math.max(min, rond(gebaar.w + p.x - gebaar.start.x, stap)), min, ontwerp.breedte - i.x);
+    let nh = klem(Math.max(min, rond(gebaar.h + p.y - gebaar.start.y, stap)), min, ontwerp.lengte - i.y);
+    if (ONDERDELEN[i.t]?.rond) nw = nh = Math.min(Math.max(nw, nh), ontwerp.breedte - i.x, ontwerp.lengte - i.y);
+    if (nw !== i.w || nh !== i.h) {
+      i.w = nw;
+      i.h = nh;
+      gebaar.veranderd = true;
+      tekenItemOpnieuw(i);
+      tekenBoven();
+      werkSelectieMaatBij();
+    }
+  }
+});
+
+function afronden() {
+  if (gebaar?.veranderd) {
+    onthoud(gebaar.voor);
     opslaan();
-    if (streek.geplant) {
-      const naam = PLANT[gekozenPlant].naam;
-      bewaar('moestuin.laatsteActie', { tekst: `${naam} geplant`, wanneer: Date.now() });
-      const ruzie = celEls.some((d, i) => tuin.cellen[i].p === gekozenPlant && d.classList.contains('ruzie'));
-      hint(ruzie
-        ? `${naam} staat naast een slechte buur (!). Tik op Info en dan op de plant.`
-        : `${naam} geplant! Tik op Info en dan op de plant voor tips.`);
-    }
+    tekenItems();
+    const kl = gebaar.item && ontwerp.items.includes(gebaar.item) ? probleem(gebaar.item) : null;
+    if (kl) meld(`Let op: ${kl}.`);
   }
-  streek = null;
 }
-elTuin.addEventListener('pointerup', eindeStreek);
-elTuin.addEventListener('pointercancel', eindeStreek);
-elTuin.addEventListener('lostpointercapture', eindeStreek);
+
+function loslaten(e) {
+  aanwijzers.delete(e.pointerId);
+  if (!gebaar) return;
+  if (gebaar.soort === 'schuif' && !gebaar.bewogen) kies(gebaar.kiesId || null);
+  if (gebaar.soort === 'schuif') tekenBoven();
+  afronden();
+  svg.classList.remove('slepen');
+  gebaar = aanwijzers.size ? { soort: 'wacht' } : null;
+}
+svg.addEventListener('pointerup', loslaten);
+svg.addEventListener('pointercancel', loslaten);
+
+svg.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  const r = svg.getBoundingClientRect();
+  zoom(Math.exp(-e.deltaY * 0.0015), e.clientX - r.left, e.clientY - r.top);
+}, { passive: false });
+
+document.getElementById('inzoomen').addEventListener('click', () => zoom(1.4));
+document.getElementById('uitzoomen').addEventListener('click', () => zoom(1 / 1.4));
+document.getElementById('passend').addEventListener('click', passend);
 
 knopTerug.addEventListener('click', () => {
   const vorige = geschiedenis.pop();
   if (!vorige) return;
-  tuin = JSON.parse(vorige);
+  ontwerp = JSON.parse(vorige);
   opslaan();
+  if (!gekozen()) kies(null);
   tekenTuin();
+  tekenItems();
+  kies(selectieId);
   knopTerug.disabled = geschiedenis.length === 0;
-  hint('Stap teruggezet.');
+  meld('Stap teruggezet');
 });
 knopTerug.disabled = true;
 
+// ---------- Toevoegen ----------
+
+function middenVanBeeld() {
+  const r = svg.getBoundingClientRect();
+  return naarWereld(r.left + r.width / 2, r.top + r.height / 2);
+}
+
+function plaats(item) {
+  item.w = Math.min(item.w, ontwerp.breedte);
+  item.h = Math.min(item.h, ontwerp.lengte);
+  const m = middenVanBeeld();
+  item.x = klem(rond(m.x - item.w / 2, 10), 0, ontwerp.breedte - item.w);
+  item.y = klem(rond(m.y - item.h / 2, 10), 0, ontwerp.lengte - item.h);
+  onthoud();
+  ontwerp.items.push(item);
+  opslaan();
+  tekenItems();
+  kies(item.id);
+}
+
+function voegOnderdeelToe(t) {
+  const o = ONDERDELEN[t];
+  plaats({ id: nieuwId(), t, x: 0, y: 0, w: o.w, h: o.h });
+  meld(`${o.naam} geplaatst. Sleep om te verplaatsen.`);
+}
+
+function standaardVak(id) {
+  const r = PLANT[id].ruimte;
+  const n = Math.max(1, Math.round(60 / r));
+  return { w: r * n, h: r * n };
+}
+
+function voegPlantToe(id) {
+  const { w, h } = standaardVak(id);
+  plaats({ id: nieuwId(), t: 'plant', p: id, x: 0, y: 0, w, h });
+  bewaar('moestuin.laatsteActie', { tekst: `${PLANT[id].naam} ingepland`, wanneer: Date.now() });
+  meld('Sleep het rondje rechtsonder om het vak groter te maken.');
+}
+
+// Een bak of bed in één keer beplanten met de juiste plantafstand
+function beplant(bak, id) {
+  const r = PLANT[id].ruimte;
+  const rand = ONDERDELEN[bak.t].rand || 0;
+  const binnenW = bak.w - 2 * rand;
+  const binnenH = bak.h - 2 * rand;
+  if (binnenW < r || binnenH < r) {
+    meld(`${PLANT[id].naam} heeft ${r} cm ruimte nodig, dat past hier niet.`);
+    return;
+  }
+  const w = Math.floor(binnenW / r) * r;
+  const h = Math.floor(binnenH / r) * r;
+  onthoud();
+  const vak = { id: nieuwId(), t: 'plant', p: id, x: rond(bak.x + (bak.w - w) / 2, 1), y: rond(bak.y + (bak.h - h) / 2, 1), w, h };
+  ontwerp.items.push(vak);
+  opslaan();
+  bewaar('moestuin.laatsteActie', { tekst: `${PLANT[id].naam} ingepland`, wanneer: Date.now() });
+  tekenItems();
+  kies(vak.id);
+  const n = aantalPlanten(vak);
+  meld(`${n} ${n === 1 ? 'plant' : 'planten'} ${PLANT[id].naam.toLowerCase()} ingepland`);
+}
+
+// ---------- Selectie-acties ----------
+
+document.getElementById('sel-klaar').addEventListener('click', () => kies(null));
+document.getElementById('sel-weg').addEventListener('click', () => {
+  const sel = gekozen();
+  if (!sel) return;
+  onthoud();
+  const mee = inhoud(sel);
+  ontwerp.items = ontwerp.items.filter((i) => i !== sel && !mee.includes(i));
+  opslaan();
+  kies(null);
+  tekenItems();
+  meld(`${naamVan(sel)}${mee.length ? ' met planten' : ''} verwijderd. Terug met de pijl bovenin.`);
+});
+document.getElementById('sel-kopie').addEventListener('click', () => {
+  const sel = gekozen();
+  if (!sel) return;
+  const kopie = { ...sel, id: nieuwId() };
+  kopie.x = klem(sel.x + 20, 0, ontwerp.breedte - sel.w);
+  kopie.y = klem(sel.y + 20, 0, ontwerp.lengte - sel.h);
+  const dx = kopie.x - sel.x;
+  const dy = kopie.y - sel.y;
+  const planten = inhoud(sel).map((j) => ({ ...j, id: nieuwId(), x: j.x + dx, y: j.y + dy }));
+  onthoud();
+  ontwerp.items.push(kopie, ...planten);
+  opslaan();
+  tekenItems();
+  kies(kopie.id);
+});
+document.getElementById('sel-draai').addEventListener('click', () => {
+  const sel = gekozen();
+  if (!sel) return;
+  onthoud();
+  const mee = inhoud(sel);
+  const cx = sel.x + sel.w / 2;
+  const cy = sel.y + sel.h / 2;
+  const oud = { x: sel.x, y: sel.y, w: sel.w, h: sel.h };
+  [sel.w, sel.h] = [Math.min(sel.h, ontwerp.breedte), Math.min(sel.w, ontwerp.lengte)];
+  sel.x = klem(rond(cx - sel.w / 2, 5), 0, ontwerp.breedte - sel.w);
+  sel.y = klem(rond(cy - sel.h / 2, 5), 0, ontwerp.lengte - sel.h);
+  // Planten draaien een kwartslag mee, om hetzelfde middelpunt
+  const ox = oud.x + oud.w / 2;
+  const oy = oud.y + oud.h / 2;
+  mee.forEach((j) => {
+    const nx = ox - (j.y + j.h - oy);
+    const ny = oy + (j.x - ox);
+    [j.w, j.h] = [j.h, j.w];
+    j.x = nx + (sel.x + sel.w / 2 - ox);
+    j.y = ny + (sel.y + sel.h / 2 - oy);
+  });
+  opslaan();
+  tekenItems();
+  kies(sel.id);
+});
+document.getElementById('sel-info').addEventListener('click', () => {
+  const sel = gekozen();
+  if (sel?.t === 'plant') openPlantinfo(sel.p, sel);
+});
+document.getElementById('sel-beplant').addEventListener('click', () => {
+  const sel = gekozen();
+  if (sel) openCatalogus('planten', (id) => beplant(sel, id), `Wat komt er in ${naamVan(sel).toLowerCase()}?`);
+});
+
 // ---------- Onderblad ----------
 
+const blad = document.getElementById('blad');
+const bladAchter = document.getElementById('blad-achtergrond');
 let vorigeFocus = null;
-function openBlad(titel, inhoud, icoon) {
+function openBlad(titel, inhoud, icoon, hoog = false) {
   vorigeFocus = document.activeElement;
-  bladTitel.replaceChildren();
-  if (icoon) bladTitel.append(spriteImg(icoon, 32));
-  bladTitel.append(document.createTextNode(titel));
-  bladInhoud.replaceChildren(...[].concat(inhoud));
+  const kop = document.getElementById('blad-titel');
+  kop.replaceChildren();
+  if (icoon) kop.append(spriteImg(icoon, 32));
+  kop.append(document.createTextNode(titel));
+  const doel = document.getElementById('blad-inhoud');
+  doel.replaceChildren(...[].concat(inhoud));
+  doel.scrollTop = 0;
+  blad.classList.toggle('hoog', hoog);
   blad.hidden = false;
   bladAchter.hidden = false;
-  blad.scrollTop = 0;
   document.getElementById('blad-sluit').focus({ preventScroll: true });
 }
 function sluitBlad() {
   blad.hidden = true;
   bladAchter.hidden = true;
-  celEls.forEach((d) => d.classList.remove('gekozen'));
   vorigeFocus?.focus?.({ preventScroll: true });
 }
 document.getElementById('blad-sluit').addEventListener('click', sluitBlad);
 bladAchter.addEventListener('click', sluitBlad);
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !blad.hidden) sluitBlad(); });
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !blad.hidden) sluitBlad();
+  else if ((e.key === 'Delete' || e.key === 'Backspace') && gekozen() && blad.hidden && document.activeElement === document.body) document.getElementById('sel-weg').click();
+});
 
-// Plantkeuze
-let filter = 'alles';
-function openPlantkeuze() {
-  const filters = el('div', 'filters');
-  const lijst = el('div', 'plantlijst');
-  const opties = [['alles', 'Alles'], ['groente', 'Groente'], ['fruit', 'Fruit'], ['kruid', 'Kruiden & bloemen'], ['nu', `Nu zaaien`]];
-  const vul = () => {
-    filters.querySelectorAll('.filter').forEach((f) => f.setAttribute('aria-pressed', String(f.dataset.f === filter)));
-    lijst.replaceChildren();
-    PLANTEN.filter((p) => {
-      if (filter === 'alles') return true;
-      if (filter === 'nu') return p.z.includes(DEZE_MAAND);
-      if (filter === 'kruid') return p.soort === 'kruid' || p.soort === 'bloem';
-      return p.soort === filter;
-    }).forEach((p) => {
-      const b = el('button', 'plantkeuze');
-      b.type = 'button';
-      if (p.z.includes(DEZE_MAAND)) b.classList.add('nu');
-      b.setAttribute('aria-pressed', String(p.id === gekozenPlant));
-      b.append(spriteImg(p.id, 40), document.createTextNode(p.naam));
-      b.addEventListener('click', () => {
-        gekozenPlant = p.id;
-        bewaar('moestuin.gekozenPlant', p.id);
-        zetPlantIcoon();
-        sluitBlad();
-        kiesTool('plant');
-      });
-      lijst.append(b);
-    });
-    if (!lijst.children.length) lijst.append(el('p', 'leeg', 'Deze maand valt er niets te zaaien. Tijd voor warme chocomel!'));
-  };
-  opties.forEach(([f, label]) => {
-    const b = el('button', 'filter', label);
-    b.type = 'button';
-    b.dataset.f = f;
-    b.addEventListener('click', () => { filter = f; vul(); });
-    filters.append(b);
-  });
-  vul();
-  openBlad('Wat wil je planten?', [filters, lijst, el('p', 'legenda', `Groen vlak = kun je in ${MAAND_LANG[DEZE_MAAND - 1]} zaaien of planten.`)]);
+// Klein plaatje van een onderdeel voor de catalogus
+function onderdeelIcoon(t) {
+  const o = ONDERDELEN[t];
+  const groot = Math.max(o.w, o.h);
+  const ic = s('svg', { viewBox: `${-groot * 0.08} ${-groot * 0.08} ${groot * 1.16} ${groot * 1.16}`, 'aria-hidden': 'false', role: 'img' });
+  ic.setAttribute('aria-label', '');
+  const item = { id: 'voorbeeld', t, x: (groot - o.w) / 2, y: (groot - o.h) / 2, w: o.w, h: o.h };
+  ic.append(tekenItem(item));
+  return ic;
 }
+
+let catalogusTab = 'inrichting';
+let plantFilter = 'alles';
+function openCatalogus(tab = catalogusTab, opKeuze = null, titel = 'Toevoegen aan je tuin') {
+  const alleenPlanten = !!opKeuze;
+  catalogusTab = alleenPlanten ? 'planten' : tab;
+  const kop = el('div', 'catalogus-kop');
+  const segmenten = el('div', 'segmenten');
+  const filters = el('div', 'filters');
+  const raster = el('div', 'catalogus');
+  const uitleg = el('p', 'uitleg');
+
+  const vul = () => {
+    segmenten.replaceChildren();
+    if (!alleenPlanten) {
+      [['inrichting', 'Tuinonderdelen'], ['planten', 'Planten']].forEach(([t, label]) => {
+        const b = el('button', 'segment', label);
+        b.type = 'button';
+        b.setAttribute('aria-pressed', String(catalogusTab === t));
+        b.addEventListener('click', () => { catalogusTab = t; vul(); });
+        segmenten.append(b);
+      });
+    }
+    segmenten.hidden = alleenPlanten;
+
+    filters.replaceChildren();
+    filters.hidden = catalogusTab !== 'planten';
+    [['alles', 'Alles'], ['groente', 'Groente'], ['fruit', 'Fruit'], ['kruid', 'Kruiden & bloemen'], ['nu', 'Nu zaaien']].forEach(([f, label]) => {
+      const b = el('button', 'filter', label);
+      b.type = 'button';
+      b.setAttribute('aria-pressed', String(plantFilter === f));
+      b.addEventListener('click', () => { plantFilter = f; vul(); });
+      filters.append(b);
+    });
+
+    raster.replaceChildren();
+    if (catalogusTab === 'inrichting') {
+      CATALOGUS_INRICHTING.forEach((t) => {
+        const o = ONDERDELEN[t];
+        const b = el('button', 'kaartje');
+        b.type = 'button';
+        b.append(onderdeelIcoon(t), document.createTextNode(o.naam), el('small', '', o.rond ? `⌀ ${meter(o.w)}` : `${meter(o.w)} × ${meter(o.h)}`));
+        b.addEventListener('click', () => { sluitBlad(); voegOnderdeelToe(t); });
+        raster.append(b);
+      });
+      uitleg.textContent = 'Na het plaatsen kun je alles verslepen, groter maken en draaien.';
+    } else {
+      PLANTEN.filter((p) => {
+        if (plantFilter === 'alles') return true;
+        if (plantFilter === 'nu') return p.z.includes(DEZE_MAAND);
+        if (plantFilter === 'kruid') return p.soort === 'kruid' || p.soort === 'bloem';
+        return p.soort === plantFilter;
+      }).forEach((p) => {
+        const b = el('button', 'kaartje');
+        b.type = 'button';
+        if (p.z.includes(DEZE_MAAND)) b.classList.add('nu');
+        b.append(spriteImg(p.id, 56), document.createTextNode(p.naam), el('small', '', `${p.ruimte} cm per plant`));
+        b.addEventListener('click', () => {
+          sluitBlad();
+          if (opKeuze) opKeuze(p.id);
+          else voegPlantToe(p.id);
+        });
+        raster.append(b);
+      });
+      if (!raster.children.length) raster.append(el('p', 'leeg', 'Deze maand valt er niets te zaaien.'));
+      uitleg.textContent = `Groen vlak = kun je in ${MAAND_LANG[DEZE_MAAND - 1]} zaaien of planten.`;
+    }
+  };
+  vul();
+  kop.append(segmenten, filters);
+  openBlad(titel, [kop, raster, uitleg], null, true);
+}
+document.getElementById('toevoegen').addEventListener('click', () => openCatalogus('inrichting'));
+
+// ---------- Plantinfo ----------
 
 function kalender(p) {
   const k = el('div', 'kalender');
@@ -457,24 +877,25 @@ function kalender(p) {
   return k;
 }
 
-function burenLijst(ids, soort) {
+function burenLijst(ids, soort, klik) {
   const d = el('div', 'buren');
   ids.forEach((id) => {
-    const b = el('span', `buur ${soort}`);
-    b.append(spriteImg(id, 16), document.createTextNode(PLANT[id].naam));
+    const b = el(klik ? 'button' : 'span', `buur ${soort}`);
+    if (klik) { b.type = 'button'; b.addEventListener('click', () => klik(id)); }
+    b.append(spriteImg(id, 22), document.createTextNode(PLANT[id].naam));
     d.append(b);
   });
   return d;
 }
 
-function alleBuren(id, soort) {
-  return PLANTEN.filter((q) => relatie(id, q.id) === soort).map((q) => q.id);
-}
-
-function openPlantinfo(id, celIndex = -1) {
+function openPlantinfo(id, vak = null) {
   const p = PLANT[id];
   const delen = [];
-  const dl = el('dl', '');
+  if (vak) {
+    const n = aantalPlanten(vak);
+    delen.push(el('p', 'tip', `In dit vak passen ${n} ${n === 1 ? 'plant' : 'planten'} (${meter(vak.w)} × ${meter(vak.h)}, ${p.ruimte} cm per plant).`));
+  }
+  const dl = el('dl');
   [['Zaaien', p.zaaien], ['Water', p.water], ['Zon', p.zon], ['Afstand', p.afstand]].forEach(([t, w]) => {
     const rij = el('div', 'info-rij');
     rij.append(el('dt', '', t), el('dd', '', w));
@@ -482,150 +903,259 @@ function openPlantinfo(id, celIndex = -1) {
   });
   delen.push(kalender(p), dl, el('p', 'tip', `Tip: ${p.tip}`));
 
-  const goed = alleBuren(id, 'goed');
-  const slecht = alleBuren(id, 'slecht');
+  const goed = PLANTEN.filter((q) => relatie(id, q.id) === 'goed').map((q) => q.id);
+  const slecht = PLANTEN.filter((q) => relatie(id, q.id) === 'slecht').map((q) => q.id);
   if (goed.length) delen.push(el('h3', '', 'Goede buren'), burenLijst(goed, 'goed'));
   if (slecht.length) delen.push(el('h3', '', 'Liever niet naast'), burenLijst(slecht, 'slecht'));
 
-  if (celIndex >= 0) {
-    celEls[celIndex].classList.add('gekozen');
-    const naast = [...new Set(buren(celIndex).map((j) => tuin.cellen[j].p).filter((q) => q && q !== id))];
-    const sectie = el('div', 'in-tuin');
-    sectie.append(el('h3', '', 'In jouw tuin ernaast'));
-    if (!naast.length) {
-      sectie.append(el('p', 'leeg', 'Nog geen andere planten ernaast.'));
-    } else {
-      const g = naast.filter((q) => relatie(id, q) === 'goed');
-      const s = naast.filter((q) => relatie(id, q) === 'slecht');
-      const n = naast.filter((q) => !relatie(id, q));
-      if (g.length) sectie.append(burenLijst(g, 'goed'));
-      if (s.length) sectie.append(burenLijst(s, 'slecht'), el('p', 'leeg', 'Tip: zet deze wat verder uit elkaar.'));
-      if (n.length) sectie.append(burenLijst(n, ''));
+  if (vak) {
+    const naast = [...new Set(burenVan(vak).map((j) => j.p))];
+    delen.push(el('h3', '', 'In jouw tuin ernaast'));
+    if (!naast.length) delen.push(el('p', 'leeg', 'Nog geen andere planten ernaast.'));
+    else {
+      const soort = (q) => relatie(id, q) || '';
+      delen.push(burenLijst(naast, '', null));
+      delen[delen.length - 1].querySelectorAll('.buur').forEach((b, i) => { const k = soort(naast[i]); if (k) b.classList.add(k); });
+      if (naast.some((q) => relatie(id, q) === 'slecht')) delen.push(el('p', 'waarschuwing', 'Een van de buren past niet zo goed. Zet ze wat verder uit elkaar, minstens 20 cm.'));
     }
-    const weg = el('button', 'knop rood breed', 'Haal deze plant weg');
-    weg.type = 'button';
-    weg.addEventListener('click', () => {
-      onthoud();
-      tuin.cellen[celIndex].p = null;
-      opslaan();
-      tekenCel(celIndex);
-      tekenRuzies();
-      sluitBlad();
-      hint(`${p.naam} weggehaald.`);
-    });
-    sectie.append(weg);
-    delen.push(sectie);
   }
   openBlad(p.naam, delen, id);
 }
 
-// Deze maand
-document.getElementById('nu-knop').addEventListener('click', () => {
-  const inTuin = [...new Set(tuin.cellen.map((c) => c.p).filter(Boolean))];
-  const maand = MAAND_LANG[DEZE_MAAND - 1];
+// ---------- Plantlijst ----------
+
+document.getElementById('lijst-knop').addEventListener('click', () => {
+  const telling = new Map();
+  ontwerp.items.filter((i) => i.t === 'plant').forEach((i) => {
+    const t = telling.get(i.p) || { aantal: 0, opp: 0, vakken: 0 };
+    t.aantal += aantalPlanten(i);
+    t.opp += i.w * i.h;
+    t.vakken++;
+    telling.set(i.p, t);
+  });
+  const lijst = el('div', 'lijst');
+  [...telling.entries()].sort((a, b) => PLANT[a[0]].naam.localeCompare(PLANT[b[0]].naam)).forEach(([id, t]) => {
+    const rij = el('button', 'lijst-rij');
+    rij.type = 'button';
+    const midden = el('span');
+    midden.append(el('strong', '', PLANT[id].naam), el('small', '', `${(t.opp / 10000).toLocaleString('nl-NL', { maximumFractionDigits: 1 })} m² · ${t.vakken} ${t.vakken === 1 ? 'vak' : 'vakken'}`));
+    rij.append(spriteImg(id, 32), midden, el('span', 'aantal', String(t.aantal)));
+    rij.addEventListener('click', () => openPlantinfo(id));
+    lijst.append(rij);
+  });
+  const totaal = [...telling.values()].reduce((a, t) => a + t.aantal, 0);
+  openBlad('Plantlijst', telling.size
+    ? [el('p', 'leeg', `${totaal} planten van ${telling.size} soorten. Handig als boodschappenlijst voor zaad en plantjes.`), el('div', '', ''), lijst]
+    : [el('p', 'leeg', 'Je hebt nog niets ingepland. Kies Toevoegen of selecteer een bak en kies Beplant.')]);
+});
+
+// ---------- Deze maand ----------
+
+document.getElementById('maand-knop').addEventListener('click', () => {
+  const inTuin = [...new Set(ontwerp.items.filter((i) => i.t === 'plant').map((i) => i.p))];
   const groep = (titel, ids, leeg) => {
-    const g = el('div', 'maand-groep');
-    g.append(el('h3', '', titel));
-    if (ids.length) {
-      const lijst = burenLijst(ids, '');
-      lijst.querySelectorAll('.buur').forEach((b, i) => {
-        b.style.cursor = 'pointer';
-        b.setAttribute('role', 'button');
-        b.tabIndex = 0;
-        b.addEventListener('click', () => openPlantinfo(ids[i]));
-      });
-      g.append(lijst);
-    } else {
-      g.append(el('p', 'leeg', leeg));
-    }
-    return g;
+    const d = el('div');
+    d.append(el('h3', '', titel), ids.length ? burenLijst(ids, '', (id) => openPlantinfo(id)) : el('p', 'leeg', leeg));
+    return d;
   };
-  const oogst = inTuin.filter((id) => PLANT[id].o.includes(DEZE_MAAND));
-  const zaai = inTuin.filter((id) => PLANT[id].z.includes(DEZE_MAAND));
-  const anders = PLANTEN.filter((p) => !inTuin.includes(p.id) && p.z.includes(DEZE_MAAND)).map((p) => p.id);
-  openBlad(`In ${maand}`, [
-    groep('Oogsten uit jouw tuin', oogst, inTuin.length ? 'Nog niets te oogsten.' : 'Je hebt nog niets geplant.'),
-    groep('Zaaien of planten', zaai, 'Niets uit jouw tuin.'),
-    groep('Ook leuk om nu te zaaien', anders, 'Even rust in de tuin.'),
+  const taken = el('div');
+  taken.append(el('h3', '', `Te doen in ${MAAND_LANG[DEZE_MAAND - 1]}`));
+  const lijstje = el('ul', 'taken');
+  MAANDTAKEN[DEZE_MAAND - 1].forEach((t) => lijstje.append(el('li', '', t)));
+  taken.append(lijstje);
+  openBlad(`In ${MAAND_LANG[DEZE_MAAND - 1]}`, [
+    taken,
+    groep('Oogsten uit jouw tuin', inTuin.filter((id) => PLANT[id].o.includes(DEZE_MAAND)), inTuin.length ? 'Nog niets te oogsten.' : 'Je hebt nog niets ingepland.'),
+    groep('Zaaien of planten uit jouw plan', inTuin.filter((id) => PLANT[id].z.includes(DEZE_MAAND)), 'Niets uit jouw plan.'),
+    groep('Ook leuk om nu te zaaien', PLANTEN.filter((p) => !inTuin.includes(p.id) && p.z.includes(DEZE_MAAND)).map((p) => p.id), 'Even rust in de tuin.'),
   ]);
 });
 
-// Tuinmaat
-document.getElementById('maat-knop').addEventListener('click', () => {
-  let k = tuin.kolommen;
-  let r = tuin.rijen;
-  const stapper = (label, waarde, min, max, zet) => {
+// ---------- Tuinmaat ----------
+
+document.getElementById('tuin-knop').addEventListener('click', () => {
+  let b = ontwerp.breedte;
+  let l = ontwerp.lengte;
+  const stapper = (label, waarde, zet) => {
     const rij = el('div', 'maat-rij');
-    const s = el('div', 'stapper');
-    const min1 = el('button', '', '-');
-    const out = el('output', '', String(waarde));
+    const st = el('div', 'stapper');
+    const min = el('button', '', '−');
+    const out = el('output', '', meter(waarde));
     const plus = el('button', '', '+');
-    min1.type = plus.type = 'button';
-    min1.setAttribute('aria-label', `${label} minder`);
-    plus.setAttribute('aria-label', `${label} meer`);
-    const pas = (d) => {
-      waarde = Math.max(min, Math.min(max, waarde + d));
-      out.textContent = String(waarde);
-      zet(waarde);
-    };
-    min1.addEventListener('click', () => pas(-1));
-    plus.addEventListener('click', () => pas(1));
-    s.append(min1, out, plus);
-    rij.append(el('span', '', label), s);
+    min.type = plus.type = 'button';
+    min.setAttribute('aria-label', `${label} kleiner`);
+    plus.setAttribute('aria-label', `${label} groter`);
+    const pas = (d) => { waarde = klem(waarde + d, 200, 3000); out.textContent = meter(waarde); zet(waarde); bevestigd = false; waarschuwing.hidden = true; toepassen.textContent = 'Maat aanpassen'; };
+    min.addEventListener('click', () => pas(-50));
+    plus.addEventListener('click', () => pas(50));
+    st.append(min, out, plus);
+    rij.append(el('strong', '', label), st);
     return rij;
   };
-  const toepassen = el('button', 'knop groen breed', 'Maat aanpassen');
+  const toepassen = el('button', 'knop-plat groen', 'Maat aanpassen');
+  const waarschuwing = el('p', 'waarschuwing');
+  waarschuwing.hidden = true;
   toepassen.type = 'button';
+  let bevestigd = false;
+  const gevolgen = () => {
+    const weg = ontwerp.items.filter((i) => i.x >= b || i.y >= l);
+    const af = ontwerp.items.filter((i) => !weg.includes(i) && (i.x + i.w > b || i.y + i.h > l));
+    return { weg, af };
+  };
   toepassen.addEventListener('click', () => {
-    if (k !== tuin.kolommen || r !== tuin.rijen) {
-      onthoud();
-      const cellen = [];
-      for (let y = 0; y < r; y++) {
-        for (let x = 0; x < k; x++) {
-          cellen.push(x < tuin.kolommen && y < tuin.rijen ? tuin.cellen[y * tuin.kolommen + x] : { g: 'gras', p: null });
-        }
-      }
-      tuin = { kolommen: k, rijen: r, cellen };
-      opslaan();
-      tekenTuin();
-      hint(`Je tuin is nu ${k} bij ${r} vakjes.`);
-    }
-    sluitBlad();
-  });
-  const wis = el('button', 'knop rood breed', 'Begin opnieuw');
-  wis.type = 'button';
-  let zeker = false;
-  wis.addEventListener('click', () => {
-    if (!zeker) {
-      zeker = true;
-      wis.textContent = 'Echt alles wissen?';
+    const { weg, af } = gevolgen();
+    if ((weg.length || af.length) && !bevestigd) {
+      bevestigd = true;
+      const delen = [];
+      if (weg.length) delen.push(`${weg.length} ${weg.length === 1 ? 'onderdeel valt' : 'onderdelen vallen'} buiten de tuin en ${weg.length === 1 ? 'wordt' : 'worden'} verwijderd`);
+      if (af.length) delen.push(`${af.length} ${af.length === 1 ? 'onderdeel wordt' : 'onderdelen worden'} afgesneden`);
+      waarschuwing.textContent = `Let op: ${delen.join(' en ')}. Tik nog een keer om door te gaan.`;
+      waarschuwing.hidden = false;
+      toepassen.textContent = 'Toch verkleinen';
       return;
     }
-    onthoud();
-    tuin = { kolommen: k, rijen: r, cellen: Array.from({ length: k * r }, () => ({ g: 'gras', p: null })) };
-    opslaan();
-    tekenTuin();
+    if (b !== ontwerp.breedte || l !== ontwerp.lengte) {
+      onthoud();
+      ontwerp.breedte = b;
+      ontwerp.lengte = l;
+      ontwerp.items = ontwerp.items.filter((i) => i.x < b && i.y < l);
+      ontwerp.items.forEach((i) => {
+        i.w = Math.min(i.w, b - i.x);
+        i.h = Math.min(i.h, l - i.y);
+      });
+      opslaan();
+      tekenTuin();
+      tekenItems();
+      passend();
+      meld(`Je tuin is nu ${meter(b)} bij ${meter(l)}`);
+    }
     sluitBlad();
-    hint('Lege tuin. Begin met Grond en veeg je bedden.');
+  });
+  const voorbeeld = el('button', 'knop-plat', 'Voorbeeldtuin laden');
+  voorbeeld.type = 'button';
+  voorbeeld.addEventListener('click', () => {
+    onthoud();
+    ontwerp = voorbeeldtuin();
+    opslaan();
+    kies(null);
+    tekenTuin();
+    tekenItems();
+    passend();
+    sluitBlad();
+  });
+  const leeg = el('button', 'knop-plat rood', 'Lege tuin');
+  leeg.type = 'button';
+  let zeker = false;
+  leeg.addEventListener('click', () => {
+    if (!zeker) { zeker = true; leeg.textContent = 'Zeker weten? Tik nog een keer'; return; }
+    onthoud();
+    ontwerp = { breedte: b, lengte: l, items: [] };
+    opslaan();
+    kies(null);
+    tekenTuin();
+    tekenItems();
+    passend();
+    sluitBlad();
+    meld('Lege tuin. Begin met Toevoegen.');
   });
   const knoppen = el('div', 'knoppen-rij');
-  knoppen.append(toepassen, wis);
+  const bewaren = el('button', 'knop-plat', 'Bewaren en back-up');
+  bewaren.type = 'button';
+  bewaren.addEventListener('click', openBackup);
+  knoppen.append(waarschuwing, toepassen, bewaren, voorbeeld, leeg);
   openBlad('Hoe groot is je tuin?', [
-    el('p', 'leeg', 'Eén vakje is ongeveer een halve meter.'),
-    stapper('Breed', k, MIN_K, MAX_K, (v) => { k = v; }),
-    stapper('Lang', r, MIN_R, MAX_R, (v) => { r = v; }),
+    el('p', 'leeg', 'Meet je tuin op en vul hier de maten in. De lijnen op de plattegrond staan om de meter.'),
+    stapper('Breedte', b, (v) => { b = v; }),
+    stapper('Lengte', l, (v) => { l = v; }),
     knoppen,
   ]);
 });
 
+// ---------- Bewaren en back-up ----------
+
+function inBeginscherm() {
+  return window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
+
+function openBackup() {
+  const uit = el('textarea', 'backup');
+  uit.id = 'backup-uit';
+  uit.readOnly = true;
+  uit.rows = 4;
+  uit.value = JSON.stringify(ontwerp);
+  uit.setAttribute('aria-label', 'Back-up van je tuin');
+  const kopieer = el('button', 'knop-plat groen', 'Kopieer back-up');
+  kopieer.type = 'button';
+  kopieer.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(uit.value);
+      kopieer.textContent = 'Gekopieerd. Plak het in een notitie of mail.';
+    } catch {
+      uit.focus();
+      uit.select();
+      kopieer.textContent = 'Selecteer de tekst en kopieer hem zelf.';
+    }
+  });
+
+  const erin = el('textarea', 'backup');
+  erin.id = 'backup-in';
+  erin.rows = 4;
+  erin.placeholder = 'Plak hier een eerder bewaarde back-up';
+  erin.setAttribute('aria-label', 'Back-up terugzetten');
+  const fout = el('p', 'waarschuwing');
+  fout.hidden = true;
+  const terugzetten = el('button', 'knop-plat', 'Back-up terugzetten');
+  terugzetten.type = 'button';
+  terugzetten.addEventListener('click', () => {
+    try {
+      const nieuw = JSON.parse(erin.value.trim());
+      if (!geldig(nieuw)) throw new Error('ongeldig');
+      nieuw.items = nieuw.items.filter((i) => (i.t === 'plant' ? PLANT[i.p] : ONDERDELEN[i.t]));
+      onthoud();
+      ontwerp = nieuw;
+      opslaan();
+      kies(null);
+      tekenTuin();
+      tekenItems();
+      passend();
+      sluitBlad();
+      meld('Je tuin is teruggezet.');
+    } catch {
+      fout.textContent = 'Dit lijkt geen back-up van je tuin. Kopieer de hele tekst.';
+      fout.hidden = false;
+    }
+  });
+
+  openBlad('Je tuin bewaren', [
+    el('p', 'leeg', 'Je tuin staat alleen op deze telefoon, in de browser. Safari kan dat na een tijd weggooien als je de site lang niet opent.'),
+    el('h3', '', 'Zet de app op je beginscherm'),
+    el('p', '', inBeginscherm() ? 'Dat is gelukt: je gebruikt de planner nu vanaf je beginscherm.' : 'Tik in Safari op het deel-icoon (vierkantje met pijl) en kies Zet op beginscherm. Dan blijft je tuin bewaard en opent hij als een app.'),
+    el('h3', '', 'Maak een back-up'),
+    el('p', 'leeg', 'Kopieer deze tekst en bewaar hem in een notitie of mail aan jezelf.'),
+    uit,
+    kopieer,
+    el('h3', '', 'Zet een back-up terug'),
+    erin,
+    fout,
+    terugzetten,
+  ]);
+}
+
 // ---------- Start ----------
 
-let resizeTimer;
-window.addEventListener('resize', () => {
-  clearTimeout(resizeTimer);
-  resizeTimer = setTimeout(() => elTuin.style.setProperty('--cel', `${celGrootte()}px`), 100);
-});
-
-zetPlantIcoon();
+maakPatronen();
 tekenTuin();
-kiesTool('grond');
+tekenItems();
+kies(null);
+requestAnimationFrame(passend);
+window.addEventListener('orientationchange', () => setTimeout(passend, 300));
+navigator.storage?.persist?.().catch?.(() => {});
+const bezoeken = (lees('moestuin.bezoeken', 0) || 0) + 1;
+bewaar('moestuin.bezoeken', bezoeken);
+if (!lees(SLEUTEL, null)) {
+  opslaan();
+  meld('Dit is een voorbeeldtuin. Tik op iets om het aan te passen.');
+} else if (bezoeken >= 3 && !inBeginscherm() && !lees('moestuin.tipGezien', false)) {
+  bewaar('moestuin.tipGezien', true);
+  meld('Tip: zet de planner op je beginscherm, dan raak je je tuin niet kwijt. Zie Tuin > Bewaren en back-up.');
+}

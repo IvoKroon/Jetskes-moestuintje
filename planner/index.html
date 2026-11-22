@@ -4,47 +4,104 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#3e8948" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Moestuin" />
     <title>Plan je moestuintje</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Nunito:wght@500;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="../shared/style.css" />
     <link rel="stylesheet" href="./planner.css" />
   </head>
-  <body>
-    <main id="app">
-      <h1 class="planner-kop">Plan je moestuintje</h1>
+  <body class="ontwerper-pagina">
+    <div class="ontwerper">
+      <header class="balk-boven">
+        <h1>Mijn moestuin</h1>
+        <div class="knoppen-klein">
+          <button class="mini" id="terug" type="button" aria-label="Stap terug" title="Stap terug">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3" /></svg>
+          </button>
+          <button class="mini" id="uitzoomen" type="button" aria-label="Uitzoomen" title="Uitzoomen">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14" /></svg>
+          </button>
+          <button class="mini" id="inzoomen" type="button" aria-label="Inzoomen" title="Inzoomen">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M12 5v14" /></svg>
+          </button>
+          <button class="mini" id="passend" type="button" aria-label="Hele tuin tonen" title="Hele tuin tonen">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>
+          </button>
+        </div>
+      </header>
 
-      <div class="gereedschap" role="toolbar" aria-label="Gereedschap">
-        <button class="tool" data-tool="grond" type="button"><span class="tegel-icoon" data-g="grond"></span>Grond</button>
-        <button class="tool" data-tool="pad" type="button"><span class="tegel-icoon" data-g="pad"></span>Pad</button>
-        <button class="tool" data-tool="gras" type="button"><span class="tegel-icoon" data-g="gras"></span>Gras</button>
-        <button class="tool" data-tool="plant" type="button" id="plant-knop"><img class="sprite" id="plant-icoon" alt="" width="24" height="24" />Plant</button>
-        <button class="tool" data-tool="gum" type="button"><span class="gum-icoon" aria-hidden="true"></span>Weg</button>
-        <button class="tool" data-tool="kijk" type="button"><span class="kijk-icoon" aria-hidden="true">?</span>Info</button>
+      <div class="doek" id="doek">
+        <svg id="plan" xmlns="http://www.w3.org/2000/svg" role="application" aria-label="Plattegrond van je moestuin">
+          <defs id="defs"></defs>
+          <g id="wereld">
+            <g id="laag-tuin"></g>
+            <g id="laag-items"></g>
+            <g id="laag-boven"></g>
+          </g>
+        </svg>
+        <p class="melding" id="melding" aria-live="polite"></p>
       </div>
 
-      <p class="hint" id="hint" aria-live="polite"></p>
-
-      <div class="tuin-kader">
-        <div class="tuin" id="tuin" aria-label="Jouw moestuin"></div>
+      <!-- Onderbalk: zonder selectie de hoofdknoppen, met selectie de bewerkknoppen -->
+      <div class="balk-onder" id="balk-hoofd">
+        <button class="actie hoofd" id="toevoegen" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>Toevoegen
+        </button>
+        <button class="actie" id="lijst-knop" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01" /></svg>Plantlijst
+        </button>
+        <button class="actie" id="maand-knop" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2" /><path d="M4 10h16M9 3v4M15 3v4" /></svg>Deze maand
+        </button>
+        <button class="actie" id="tuin-knop" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" /><path d="M4 9h16M9 4v16" /></svg>Tuin
+        </button>
       </div>
 
-      <div class="acties">
-        <button class="knop" id="ongedaan" type="button">Terug</button>
-        <button class="knop" id="nu-knop" type="button">Deze maand</button>
-        <button class="knop" id="maat-knop" type="button">Maat</button>
+      <div class="balk-onder selectie" id="balk-selectie" hidden>
+        <div class="sel-info">
+          <span class="sel-naam" id="sel-naam"></span>
+          <span class="sel-maat" id="sel-maat"></span>
+        </div>
+        <div class="sel-knoppen">
+          <button class="actie" id="sel-beplant" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20v-8M12 12c0-4 3-7 7-7 0 4-3 7-7 7ZM12 14c0-3-2-5-6-5 0 3 2 5 6 5Z" /></svg>Beplant
+          </button>
+          <button class="actie" id="sel-info" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 11v6M12 7h.01" /></svg>Verzorging
+          </button>
+          <button class="actie" id="sel-draai" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-3-6.2M20 4v5h-5" /></svg>Draai
+          </button>
+          <button class="actie" id="sel-kopie" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2" /><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3" /></svg>Kopie
+          </button>
+          <button class="actie gevaar" id="sel-weg" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" /></svg>Verwijder
+          </button>
+          <button class="actie" id="sel-klaar" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5 9-10" /></svg>Klaar
+          </button>
+        </div>
       </div>
-    </main>
+    </div>
 
-    <!-- Onderblad voor plantkeuze, plantinfo, maand-overzicht en tuinmaat -->
+    <!-- Onderblad voor catalogus, plantinfo, lijsten en tuinmaat -->
     <div class="blad-achtergrond" id="blad-achtergrond" hidden></div>
-    <section class="blad kader" id="blad" role="dialog" aria-modal="true" aria-labelledby="blad-titel" hidden>
+    <section class="blad" id="blad" role="dialog" aria-modal="true" aria-labelledby="blad-titel" hidden>
       <div class="blad-kop">
         <h2 id="blad-titel"></h2>
-        <button class="sluit" id="blad-sluit" type="button" aria-label="Sluiten">X</button>
+        <button class="sluit" id="blad-sluit" type="button" aria-label="Sluiten">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+        </button>
       </div>
-      <div id="blad-inhoud"></div>
+      <div class="blad-inhoud" id="blad-inhoud"></div>
     </section>
 
     <nav class="menu" aria-label="Menu">

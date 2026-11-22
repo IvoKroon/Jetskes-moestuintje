@@ -1,6 +1,7 @@
 // Groenten, fruit en kruiden voor de moestuinplanner.
 // Elke plant heeft een 8x8 pixelart-sprite (tekstraster, zie PALET) en verzorgingsinfo.
 // Maanden zijn 1..12. z = zaaien/planten, o = oogsten.
+// ruimte = plantafstand in cm: elke plant krijgt een vakje van ruimte x ruimte.
 
 export const PALET = {
   g: '#63c74d', // groen
@@ -23,10 +24,10 @@ export const PALET = {
 
 export const PLANTEN = [
   {
-    id: 'tomaat', naam: 'Tomaat', soort: 'groente',
+    id: 'tomaat', naam: 'Tomaat', soort: 'groente', ruimte: 50,
     sprite: ['...gg...', '..gGgg..', '.rrgrrr.', 'rrrrrrrr', 'rrwrrrrr', 'rrrrrrrR', '.rrrrrR.', '..RRRR..'],
     z: [3, 4, 5], o: [7, 8, 9, 10],
-    zaaien: 'Binnen zaaien in maart of april. Na half mei (IJsheiligen) naar buiten.',
+    zaaien: 'Binnen zaaien in maart of april. Na half mei (IJsheiligen) naar buiten. In de kas kan het al in april.',
     water: 'Veel en regelmatig, aan de voet. Niet over de blaadjes.',
     zon: 'Volle zon, liefst beschut.',
     afstand: '50 cm',
@@ -35,7 +36,7 @@ export const PLANTEN = [
     slecht: ['aardappel', 'mais'],
   },
   {
-    id: 'sla', naam: 'Sla', soort: 'groente',
+    id: 'sla', naam: 'Sla', soort: 'groente', ruimte: 25,
     sprite: ['..l..l..', '.lgllgl.', 'lgllllgl', 'lllgglll', 'glgllglg', 'gglggglg', '.gGggGg.', '..GGGG..'],
     z: [3, 4, 5, 6, 7, 8], o: [5, 6, 7, 8, 9, 10],
     zaaien: 'Van maart tot augustus. Zaai elke 2 à 3 weken een beetje, dan heb je steeds verse sla.',
@@ -47,19 +48,19 @@ export const PLANTEN = [
     slecht: ['peterselie'],
   },
   {
-    id: 'wortel', naam: 'Wortel', soort: 'groente',
+    id: 'wortel', naam: 'Wortel', soort: 'groente', ruimte: 10,
     sprite: ['..g.g...', '...gg.g.', '...ggg..', '..oooo..', '..oobo..', '...ooo..', '...oo...', '....o...'],
     z: [3, 4, 5, 6, 7], o: [6, 7, 8, 9, 10, 11],
-    zaaien: 'Direct in de grond, van maart tot juli, in rijtjes.',
+    zaaien: 'Direct in de grond, van maart tot juli, in rijtjes. In de planner telt elke wortel als 10 bij 10 cm.',
     water: 'Matig, wel gelijkmatig vochtig houden.',
     zon: 'Zon.',
-    afstand: '5 cm in de rij, 25 cm tussen de rijen',
+    afstand: '10 cm',
     tip: 'Dun de plantjes uit als ze klein zijn. Uien ernaast houden de wortelvlieg weg.',
     goed: ['ui', 'prei', 'sla', 'tomaat', 'radijs', 'erwt'],
     slecht: [],
   },
   {
-    id: 'aardbei', naam: 'Aardbei', soort: 'fruit',
+    id: 'aardbei', naam: 'Aardbei', soort: 'fruit', ruimte: 30,
     sprite: ['..gggg..', '.gGggGg.', '.rrrrrr.', 'rryrryrr', 'rrrrrrrr', '.ryrrry.', '..rrrr..', '...rr...'],
     z: [3, 4, 8, 9], o: [6, 7],
     zaaien: 'Plantjes zetten in augustus/september of in het voorjaar.',
@@ -71,7 +72,7 @@ export const PLANTEN = [
     slecht: [],
   },
   {
-    id: 'courgette', naam: 'Courgette', soort: 'groente',
+    id: 'courgette', naam: 'Courgette', soort: 'groente', ruimte: 100,
     sprite: ['......gG', '.....ggG', '....gggG', '...gglg.', '..gglg..', '.gglg...', 'gGgg....', 'GG......'],
     z: [4, 5], o: [7, 8, 9, 10],
     zaaien: 'Binnen zaaien in april, half mei naar buiten.',
@@ -83,19 +84,19 @@ export const PLANTEN = [
     slecht: ['aardappel'],
   },
   {
-    id: 'boon', naam: 'Sperzieboon', soort: 'groente',
+    id: 'boon', naam: 'Sperzieboon', soort: 'groente', ruimte: 15,
     sprite: ['...gG...', '...gg...', '....gl..', '....gl..', '...gl...', '...gl...', '..gl....', '..g.....'],
     z: [5, 6, 7], o: [7, 8, 9],
     zaaien: 'Direct buiten vanaf half mei, als de grond warm is.',
     water: 'Regelmatig, vooral tijdens de bloei.',
     zon: 'Zon.',
-    afstand: '10 cm',
+    afstand: '15 cm',
     tip: 'Hoe vaker je plukt, hoe meer bonen er komen.',
     goed: ['mais', 'wortel', 'courgette', 'aardappel', 'pompoen', 'komkommer'],
     slecht: ['ui', 'prei'],
   },
   {
-    id: 'erwt', naam: 'Doperwt', soort: 'groente',
+    id: 'erwt', naam: 'Doperwt', soort: 'groente', ruimte: 10,
     sprite: ['........', 'G.......', '.gggggg.', 'glglglgg', 'gglglglg', '.gggggg.', '........', '........'],
     z: [3, 4, 5], o: [6, 7],
     zaaien: 'Direct buiten van maart tot mei.',
@@ -107,19 +108,19 @@ export const PLANTEN = [
     slecht: ['ui', 'prei'],
   },
   {
-    id: 'radijs', naam: 'Radijs', soort: 'groente',
+    id: 'radijs', naam: 'Radijs', soort: 'groente', ruimte: 5,
     sprite: ['..g..g..', '...gg...', '...gg...', '..PrrP..', '.rrrrrr.', '.rwrrrr.', '..rrrr..', '...ww...'],
     z: [3, 4, 5, 6, 7, 8, 9], o: [4, 5, 6, 7, 8, 9, 10],
     zaaien: 'Van maart tot september, direct buiten. Binnen 4 weken klaar!',
     water: 'Regelmatig. Te droog maakt ze scherp en voos.',
     zon: 'Zon of halfschaduw.',
-    afstand: '3 cm',
+    afstand: '5 cm',
     tip: 'De snelste groente die er is. Leuk als tussenvulling tussen tragere planten.',
     goed: ['sla', 'wortel', 'erwt', 'spinazie'],
     slecht: [],
   },
   {
-    id: 'ui', naam: 'Ui', soort: 'groente',
+    id: 'ui', naam: 'Ui', soort: 'groente', ruimte: 10,
     sprite: ['....g...', '...gg...', '...yy...', '..yyyy..', '.yYyyyY.', '.yyyyyy.', '..yYYy..', '...ww...'],
     z: [3, 4], o: [7, 8, 9],
     zaaien: 'Plantuitjes in maart/april in de grond drukken, puntje boven.',
@@ -131,7 +132,7 @@ export const PLANTEN = [
     slecht: ['boon', 'erwt'],
   },
   {
-    id: 'aardappel', naam: 'Aardappel', soort: 'groente',
+    id: 'aardappel', naam: 'Aardappel', soort: 'groente', ruimte: 35,
     sprite: ['........', '..kkkk..', '.kccbck.', 'kccccccb', 'kcbcccck', '.kccccbk', '..kkkk..', '........'],
     z: [4], o: [6, 7, 8, 9],
     zaaien: 'Pootaardappels in april in de grond, zo\'n 10 cm diep.',
@@ -143,7 +144,7 @@ export const PLANTEN = [
     slecht: ['tomaat', 'courgette', 'pompoen', 'komkommer', 'framboos', 'zonnebloem'],
   },
   {
-    id: 'prei', naam: 'Prei', soort: 'groente',
+    id: 'prei', naam: 'Prei', soort: 'groente', ruimte: 15,
     sprite: ['g.....g.', '.g...g..', '..g.g...', '...gg...', '...lw...', '...ww...', '...ww...', '..w..w..'],
     z: [3, 4, 5, 6], o: [9, 10, 11, 12, 1, 2],
     zaaien: 'Binnen zaaien in maart/april, in juni uitplanten.',
@@ -155,7 +156,7 @@ export const PLANTEN = [
     slecht: ['boon', 'erwt'],
   },
   {
-    id: 'spinazie', naam: 'Spinazie', soort: 'groente',
+    id: 'spinazie', naam: 'Spinazie', soort: 'groente', ruimte: 10,
     sprite: ['.gg..gg.', 'gGggggGg', 'ggGggGgg', '.ggGGgg.', '..gGGg..', '...GG...', '...G....', '........'],
     z: [3, 4, 5, 8, 9], o: [4, 5, 6, 9, 10, 11],
     zaaien: 'Vroeg in het voorjaar of in de nazomer, direct buiten.',
@@ -167,7 +168,7 @@ export const PLANTEN = [
     slecht: [],
   },
   {
-    id: 'komkommer', naam: 'Komkommer', soort: 'groente',
+    id: 'komkommer', naam: 'Komkommer', soort: 'groente', ruimte: 60,
     sprite: ['........', '......G.', '.gggggG.', 'glglglgg', 'gggggggg', '.Gggggg.', '........', '........'],
     z: [4, 5], o: [7, 8, 9],
     zaaien: 'Binnen zaaien in april, eind mei naar buiten.',
@@ -179,7 +180,7 @@ export const PLANTEN = [
     slecht: ['aardappel'],
   },
   {
-    id: 'pompoen', naam: 'Pompoen', soort: 'groente',
+    id: 'pompoen', naam: 'Pompoen', soort: 'groente', ruimte: 150,
     sprite: ['...Gb...', '...b....', '.oooooo.', 'oOoooOoo', 'oOoooOoo', 'oOoooOoo', '.oooooo.', '........'],
     z: [4, 5], o: [9, 10],
     zaaien: 'Binnen zaaien in april, half mei naar buiten.',
@@ -191,7 +192,7 @@ export const PLANTEN = [
     slecht: ['aardappel'],
   },
   {
-    id: 'paprika', naam: 'Paprika', soort: 'groente',
+    id: 'paprika', naam: 'Paprika', soort: 'groente', ruimte: 45,
     sprite: ['...G....', '..gG....', '.yyyyyy.', 'yywyyyyy', 'yyyyyyyy', 'yyyYyyyy', '.yY.yYy.', '........'],
     z: [2, 3, 5], o: [8, 9, 10],
     zaaien: 'Binnen zaaien in februari/maart, eind mei naar buiten of in een kas.',
@@ -203,7 +204,7 @@ export const PLANTEN = [
     slecht: [],
   },
   {
-    id: 'basilicum', naam: 'Basilicum', soort: 'kruid',
+    id: 'basilicum', naam: 'Basilicum', soort: 'kruid', ruimte: 20,
     sprite: ['...l....', '..lgl...', '.lgglgl.', '..gggl..', '.lggggl.', '..gGgg..', '...G....', '...G....'],
     z: [4, 5], o: [6, 7, 8, 9],
     zaaien: 'Binnen in april, pas eind mei naar buiten.',
@@ -215,7 +216,7 @@ export const PLANTEN = [
     slecht: [],
   },
   {
-    id: 'peterselie', naam: 'Peterselie', soort: 'kruid',
+    id: 'peterselie', naam: 'Peterselie', soort: 'kruid', ruimte: 20,
     sprite: ['l.l..l.l', 'glg.glg.', '.g..g...', '..g.g.g.', '...ggg..', '....G...', '...G....', '...G....'],
     z: [3, 4, 5, 6, 7], o: [6, 7, 8, 9, 10, 11],
     zaaien: 'Van maart tot juli, direct buiten.',
@@ -227,7 +228,7 @@ export const PLANTEN = [
     slecht: ['sla'],
   },
   {
-    id: 'framboos', naam: 'Framboos', soort: 'fruit',
+    id: 'framboos', naam: 'Framboos', soort: 'fruit', ruimte: 50,
     sprite: ['...gg...', '..gGg...', '.PrPrP..', '.rPrPr..', '.PrPrP..', '..rPr...', '...r....', '........'],
     z: [11, 12, 1, 2, 3], o: [7, 8, 9],
     zaaien: 'Struikjes planten tussen november en maart.',
@@ -239,7 +240,7 @@ export const PLANTEN = [
     slecht: ['aardappel', 'tomaat'],
   },
   {
-    id: 'bes', naam: 'Blauwe bes', soort: 'fruit',
+    id: 'bes', naam: 'Blauwe bes', soort: 'fruit', ruimte: 120,
     sprite: ['....G...', '...G.G..', '..G...G.', '.BBB.BBB', '.BwB.BwB', '.BBB.BBB', '..BB..B.', '........'],
     z: [10, 11, 3, 4], o: [7, 8],
     zaaien: 'Struik planten in de herfst of het vroege voorjaar.',
@@ -251,7 +252,7 @@ export const PLANTEN = [
     slecht: [],
   },
   {
-    id: 'mais', naam: 'Maïs', soort: 'groente',
+    id: 'mais', naam: 'Maïs', soort: 'groente', ruimte: 40,
     sprite: ['...g....', '..gyg...', '..yyyg..', '.gyyyg..', '.gyYyg..', '.gyyyg..', '..gyg...', '...g....'],
     z: [4, 5], o: [8, 9],
     zaaien: 'Binnen in april of buiten vanaf half mei.',
@@ -263,7 +264,7 @@ export const PLANTEN = [
     slecht: ['tomaat'],
   },
   {
-    id: 'zonnebloem', naam: 'Zonnebloem', soort: 'bloem',
+    id: 'zonnebloem', naam: 'Zonnebloem', soort: 'bloem', ruimte: 40,
     sprite: ['..y.y...', '.yybyy..', 'yybbbyy.', '.ybbby..', '..yyy...', '...g.g..', '..gg.g..', '...g....'],
     z: [4, 5], o: [7, 8, 9],
     zaaien: 'Direct buiten in april of mei.',
@@ -273,6 +274,42 @@ export const PLANTEN = [
     tip: 'Lokt bijen naar je moestuin. De zaden zijn in de winter lekker voor vogels.',
     goed: ['komkommer', 'mais'],
     slecht: ['aardappel'],
+  },
+  {
+    id: 'knoflook', naam: 'Knoflook', soort: 'groente', ruimte: 10,
+    sprite: ['...g....', '...g....', '..wwww..', '.wwwwww.', 'wwPwwPww', 'wwwwwwww', '.wwPPww.', '..wwww..'],
+    z: [10, 11, 2, 3], o: [6, 7],
+    zaaien: 'Teentjes planten in oktober of november (of februari/maart), puntje boven, 5 cm diep.',
+    water: 'Weinig. Knoflook houdt het liever droog.',
+    zon: 'Zon.',
+    afstand: '10 cm',
+    tip: 'Oogsten als de onderste bladeren geel worden. Laat de bollen drogen op een luchtige plek.',
+    goed: ['aardbei', 'tomaat', 'wortel'],
+    slecht: ['boon', 'erwt'],
+  },
+  {
+    id: 'boerenkool', naam: 'Boerenkool', soort: 'groente', ruimte: 50,
+    sprite: ['.G.gG.G.', 'GgGGgGgG', 'gGgGGgGg', 'GgGgGgGg', '.gGgGgG.', '..gGGg..', '...gG...', '...bb...'],
+    z: [5, 6], o: [10, 11, 12, 1, 2],
+    zaaien: 'Zaaien in mei of juni, in juli uitplanten. Oogsten vanaf oktober, de hele winter door.',
+    water: 'Regelmatig.',
+    zon: 'Zon of halfschaduw.',
+    afstand: '50 cm',
+    tip: 'Smaakt zoeter na de eerste nachtvorst. Pluk de onderste bladeren, dan blijft hij doorgroeien.',
+    goed: ['ui', 'prei'],
+    slecht: ['aardbei'],
+  },
+  {
+    id: 'rabarber', naam: 'Rabarber', soort: 'groente', ruimte: 80,
+    sprite: ['.GGGGGG.', 'GgGgGgGG', 'GGgGgGgG', '.GGGGGG.', '..r.r.r.', '..r.r.r.', '..R.R.R.', '..R.R.R.'],
+    z: [3, 4, 11], o: [4, 5, 6],
+    zaaien: 'Plant een kluit in het najaar of vroege voorjaar. Oogst het eerste jaar nog niet.',
+    water: 'Regelmatig, hij houdt van vochtige grond.',
+    zon: 'Zon of halfschaduw.',
+    afstand: '80 cm',
+    tip: 'Trek de stelen los in plaats van ze af te snijden. De bladeren zijn giftig.',
+    goed: ['aardbei'],
+    slecht: [],
   },
 ];
 
@@ -288,3 +325,19 @@ export function relatie(a, b) {
   if (pa.goed.includes(b) || pb.goed.includes(a)) return 'goed';
   return null;
 }
+
+// Taken per maand (index 0 = januari), voor als er in de tuin even weinig te zaaien valt.
+export const MAANDTAKEN = [
+  ['Plan je tuin en bedenk wat je wilt verbouwen.', 'Bekijk zaadcatalogi en bestel zaad.', 'Controleer of je oude zaden nog goed zijn.', 'Maak je gereedschap schoon.'],
+  ['Zaai paprika binnen voor, tomaten kunnen eind februari.', 'Koop zaad en potgrond als je dat nog niet deed.', 'Snoei fruitstruiken bij vorstvrij weer.', 'Plant knoflook als de grond niet bevroren is.'],
+  ['Zaai tomaten en basilicum binnen voor.', 'Zaai buiten radijs, spinazie, sla en erwten, liefst onder een kapje.', 'Zet aardappels te voorkiemen op een lichte, koele plek.', 'Verspreid compost over de bedden.'],
+  ['Poot aardappels en plant uien.', 'Zaai wortel, prei en peterselie.', 'Zaai courgette, komkommer en pompoen binnen voor.', 'Wied het onkruid, het groeit nu al.', 'Let op slakken.'],
+  ['Zet na half mei (IJsheiligen) tomaten, courgette en pompoen naar buiten.', 'Zaai bonen en maïs direct buiten.', 'Zet steunen bij tomaten en bonen.', 'Geef regelmatig water en oogst de eerste sla.'],
+  ['Blijf elke paar weken sla en radijs zaaien voor steeds verse oogst.', 'Verwijder dieven bij tomaten en bind ze vast.', 'Pluk aardbeien en knip daarna de uitlopers weg.', 'Zet boerenkool en prei uit.', 'Mulch tegen uitdroging.'],
+  ['Oogst elke dag: courgette, bonen en sla.', 'Geef water in de ochtend, aan de voet van de plant.', 'Pluk frambozen en knip de gedragen takken weg.', 'Zaai spinazie en radijs voor de herfst.'],
+  ['Oogst uien en knoflook als het loof omvalt.', 'Pluk tomaten en paprika.', 'Zaai spinazie en radijs voor de herfst.', 'Zet aardbeiplantjes voor volgend jaar.'],
+  ['Oogst pompoenen en maïs.', 'Rooi aardappels als het loof is afgestorven.', 'Dek lege bedden af met compost.', 'Plant aardbeien.'],
+  ['Oogst de laatste pompoenen en wortels voor de vorst.', 'Plant knoflook en winteruien.', 'Oogst boerenkool en prei.', 'Gooi bladeren en tuinafval op de composthoop.'],
+  ['Plant rabarber en fruitstruiken.', 'Dek gevoelige planten af bij vorst.', 'Leg compost op de lege bedden.', 'Maak de regenton leeg als het gaat vriezen.'],
+  ['Oogst boerenkool en prei.', 'Maak je gereedschap schoon en berg het op.', 'Plan alvast je tuin voor volgend jaar.', 'Bestel zaad voor het voorjaar.'],
+];
