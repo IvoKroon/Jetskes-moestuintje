@@ -113,6 +113,12 @@ p { margin: 0 0 12px; }
 .keuzes small { display: block; font-size: 9px; margin-top: 6px; }
 .weetjes { font-size: 10px; }
 .weetjes p:last-child { margin: 0; }
+.online-top[hidden] { display: none; }
+.weetjes + .online-top { margin-top: 16px; }
+.online-top h2 { font-size: 11px; margin: 0 0 10px; }
+.online-top ol { margin: 0; padding: 0 0 0 28px; }
+.online-top li { margin-bottom: 6px; }
+.online-top li span:last-child { float: right; }
 
 .binnenkort { text-align: center; }
 .binnenkort .sprite { margin: 16px auto; display: block; }

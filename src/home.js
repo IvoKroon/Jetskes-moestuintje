@@ -1,6 +1,7 @@
 import { sprite } from '../shared/sprites.js';
 import { lees } from '../shared/opslag.js';
 import { BEGROETING } from './config.js';
+import { haalTop, vulLijst } from '../shared/highscore.js';
 
 function el(tag, klasse, tekst) {
   const e = document.createElement(tag);
@@ -48,7 +49,18 @@ function render(root) {
   const laatste = lees('moestuin.laatsteActie', null);
   if (laatste?.tekst) weetjes.append(el('p', '', `Laatst in de tuin: ${laatste.tekst}`));
 
-  root.append(kop, begroeting, keuzes, weetjes);
+  // Online top 5 van het spel; verschijnt alleen als die er is
+  const online = el('section', 'kader weetjes online-top');
+  online.hidden = true;
+  const ol = el('ol');
+  online.append(el('h2', '', 'Top 5 Moestuin Rush'), ol);
+  haalTop().then((top) => {
+    if (!top?.length) return;
+    vulLijst(ol, top.slice(0, 5));
+    online.hidden = false;
+  });
+
+  root.append(kop, begroeting, keuzes, weetjes, online);
 }
 
 render(document.getElementById('app'));

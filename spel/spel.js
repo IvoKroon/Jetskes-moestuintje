@@ -2,6 +2,7 @@
 import { lees, bewaar } from '../shared/opslag.js';
 import { plaatje, plaatjeUrl, katPlaatje, maakGrond, maakGras, tekenTekst, KLEUR } from './spel-sprites.js';
 import { geluid } from './spel-geluid.js';
+import { haalTop, stuurScore, vulLijst, laatsteNaam, bewaarNaam } from '../shared/highscore.js';
 
 // ---------- Instellingen ----------
 
@@ -879,8 +880,55 @@ function eindeSpel() {
   }
   if (!lijst.length && !S.weggejaagd) oogst.append(Object.assign(document.createElement('li'), { textContent: 'Nog niks geoogst' }));
   toonRecords();
+  toonOnline();
   setTimeout(() => toestand === 'einde' && toon('einde'), 700);
 }
+
+// ---------- Online highscore ----------
+
+const naamForm = $('naamForm');
+const naamVeld = $('naamVeld');
+const naamKnop = $('naamKnop');
+const naamMelding = $('naamMelding');
+const onlineRecords = $('onlineRecords');
+let teVersturen = null; // { score, tijd } van het spel dat net klaar is
+
+function toonTop(top, plek = null) {
+  if (!top?.length) return;
+  vulLijst($('onlineScores'), top, plek);
+  onlineRecords.hidden = false;
+}
+
+function toonOnline() {
+  teVersturen = S.score > 0 ? { score: S.score, tijd: S.tijd } : null;
+  naamForm.hidden = !teVersturen;
+  naamForm.querySelector('.naam-rij').hidden = false;
+  naamVeld.disabled = naamKnop.disabled = false;
+  naamVeld.value = laatsteNaam();
+  naamMelding.textContent = '';
+  onlineRecords.hidden = true;
+  haalTop().then((top) => toestand === 'einde' && toonTop(top));
+}
+
+naamForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const naam = naamVeld.value.trim();
+  if (!teVersturen || !naam) return;
+  naamVeld.blur();
+  naamVeld.disabled = naamKnop.disabled = true;
+  naamMelding.textContent = 'Even versturen...';
+  const uit = await stuurScore(naam, teVersturen.score, teVersturen.tijd);
+  if (uit.fout) {
+    naamMelding.textContent = uit.fout;
+    naamVeld.disabled = naamKnop.disabled = false;
+    return;
+  }
+  bewaarNaam(naam);
+  teVersturen = null;
+  naamForm.querySelector('.naam-rij').hidden = true;
+  naamMelding.textContent = uit.plek === 1 ? 'Nummer 1 van iedereen!' : uit.plek ? `Je staat op plek ${uit.plek}!` : 'Opgeslagen! Nog net niet in de top 10.';
+  toonTop(uit.top, uit.plek);
+});
 
 function toonRecords() {
   const record = lees('spel.highscore', 0) ?? 0;

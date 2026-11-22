@@ -64,9 +64,21 @@
             <p class="eindscore" id="eindScore">0</p>
             <p id="eindTekst"></p>
             <ul id="eindOogst" class="oogst"></ul>
+            <form id="naamForm" class="naam-form" hidden>
+              <label for="naamVeld">Zet je score online</label>
+              <div class="naam-rij">
+                <input id="naamVeld" name="naam" maxlength="12" autocomplete="nickname" autocapitalize="words" enterkeyhint="send" placeholder="Je naam" required />
+                <button id="naamKnop" class="knop groen klein" type="submit">OK</button>
+              </div>
+              <p id="naamMelding" class="naam-melding" role="status"></p>
+            </form>
             <button id="opnieuwKnop" class="knop groen breed">Nog een keer</button>
+            <div class="records online" id="onlineRecords" hidden>
+              <h3>Top 10 online</h3>
+              <ol id="onlineScores"></ol>
+            </div>
             <div class="records" hidden>
-              <h3>Beste scores</h3>
+              <h3>Jouw beste scores</h3>
               <ol id="eindScores"></ol>
             </div>
           </div>
