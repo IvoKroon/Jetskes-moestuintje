@@ -2,6 +2,7 @@
 import { lees, bewaar } from '../shared/opslag.js';
 import { plaatje, plaatjeUrl, katPlaatje, maakGrond, maakGras, tekenTekst, KLEUR } from './spel-sprites.js';
 import { geluid } from './spel-geluid.js';
+import { bewaarOogst, eigenKatten, KATTEN, toonMarkt } from './spel-markt.js';
 import { haalTop, stuurScore, vulLijst, laatsteNaam, bewaarNaam } from '../shared/highscore.js';
 
 // ---------- Instellingen ----------
@@ -57,7 +58,7 @@ const recordEl = $('record');
 const levelEl = $('level');
 const hartjesEl = $('hartjes');
 const meldingEl = $('melding');
-const schermen = { start: $('start'), pauze: $('pauze'), einde: $('einde') };
+const schermen = { start: $('start'), pauze: $('pauze'), einde: $('einde'), markt: $('markt') };
 
 const gras = maakGras(W, H);
 const grond = maakGrond(VAK);
@@ -103,7 +104,8 @@ function nieuwSpel() {
     kat: null,
     teVeelUitgelegd: false,
     katKlok: 5,
-    volgendeKat: Math.random() < 0.5 ? 'zwartwit' : 'cyperse',
+    katten: eigenKatten(), // alleen gekochte katten lopen langs
+    volgendeKat: 0,
     katStof: [],
     schat: null,
     plasje: null,
@@ -158,6 +160,7 @@ function oogst(v) {
   const punten = Math.round(g.punten * (v.perfect ? 1.5 : 1) * (vers ? 1.5 : 1));
   const goud = v.perfect || vers;
   S.geoogst[v.gewas] = (S.geoogst[v.gewas] ?? 0) + 1;
+  bewaarOogst(v.gewas); // voor de markt
   zweef(`+${punten}`, v.x + 8, v.y + 2, goud ? KLEUR.y : KLEUR.w);
   stof(v.x + 8, v.y + 7, g.kleur, 8, true);
   if (goud) stof(v.x + 8, v.y + 5, KLEUR.y, 4, true);
@@ -651,12 +654,14 @@ function werkKatBij(dt) {
   const kat = S.kat;
   if (!kat) {
     S.katKlok -= dt;
-    if (S.katKlok <= 0) {
+    if (S.katKlok <= 0 && !S.katten.length) S.katKlok = 10; // nog geen kat gekocht op de markt
+    else if (S.katKlok <= 0) {
       const kant = Math.random() < 0.5 ? 1 : -1;
-      // om de beurt de zwart-witte en de cyperse kat
-      S.volgendeKat = S.volgendeKat === 'zwartwit' ? 'cyperse' : 'zwartwit';
+      // de gekochte katten komen om de beurt langs
+      const soort = S.katten[S.volgendeKat++ % S.katten.length];
+      melding(`${KATTEN[soort].naam} komt langs!`);
       S.kat = {
-        soort: S.volgendeKat,
+        soort,
         x: kant > 0 ? -12 : W,
         y: 0,
         kant,
@@ -736,7 +741,7 @@ function tekenKat() {
   const kat = S.kat;
   if (kat) {
     kctx.save();
-    kctx.translate(Math.round(kat.x) + (kat.kant < 0 ? 12 : 0), KAT_Y + kat.y);
+    kctx.translate(Math.round(kat.x) + (kat.kant < 0 ? 12 : 0), KAT_Y + kat.y - 2); // plaatje heeft 2 rijen ruimte voor de halo
     if (kat.kant < 0) kctx.scale(-1, 1);
     kctx.drawImage(katPlaatje(kat.soort, katHouding(kat)), 0, 0);
     kctx.restore();
@@ -949,6 +954,18 @@ function toonRecords() {
 const hartUrl = plaatjeUrl('hartje');
 
 $('startKnop').addEventListener('click', start);
+
+// De markt opent vanaf het startscherm en na een potje; Terug gaat naar waar je vandaan kwam.
+const GEWAS_NAMEN = Object.fromEntries(Object.entries(GEWASSEN).map(([k, g]) => [k, { naam: g.naam, meer: g.meer }]));
+let marktTerug = 'start';
+for (const knop of document.querySelectorAll('.naar-markt')) {
+  knop.addEventListener('click', () => {
+    marktTerug = toestand === 'einde' ? 'einde' : 'start';
+    toonMarkt($('marktInhoud'), GEWAS_NAMEN);
+    toon('markt');
+  });
+}
+$('marktTerug').addEventListener('click', () => toon(marktTerug));
 $('opnieuwKnop').addEventListener('click', start);
 $('verderKnop').addEventListener('click', hervat);
 $('stopKnop').addEventListener('click', () => {

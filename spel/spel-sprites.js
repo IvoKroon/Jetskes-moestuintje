@@ -263,9 +263,29 @@ const KAT_KLEUR = {
   cyperse: { A: 'T', Z: 't', D: 't', H: 'T', E: 'k', M: 'c', W: 'c', N: 'p' },
 };
 
-/** Een kat in een bepaalde houding, als canvas. */
+// Willem (de zwart-witte kat) heeft een aureooltje boven zijn kop.
+const HALO = ['..yy', '.y..y'];
+
+/**
+ * Een kat in een bepaalde houding, als canvas van 12x10: twee lege rijen bovenaan
+ * (waar bij Willem de halo zweeft) en daaronder de kat van 12x8.
+ */
 export function katPlaatje(soort, houding) {
   const sleutel = `kat:${soort}:${houding}`;
-  if (!cache.has(sleutel)) cache.set(sleutel, maak(KAT_VORM[houding], KAT_KLEUR[soort]));
+  if (!cache.has(sleutel)) {
+    const lijf = maak(KAT_VORM[houding], KAT_KLEUR[soort]);
+    const c = document.createElement('canvas');
+    c.width = 12;
+    c.height = 10;
+    const ctx = c.getContext('2d');
+    ctx.drawImage(lijf, 0, 2);
+    if (soort === 'zwartwit') {
+      // de halo volgt de kop: bij graven zit die twee rijen lager
+      const y = houding.startsWith('graaf') ? 2 : 0;
+      ctx.fillStyle = KLEUR.y;
+      HALO.forEach((rij, dy) => [...rij].forEach((t, dx) => t === 'y' && ctx.fillRect(7 + dx, y + dy, 1, 1)));
+    }
+    cache.set(sleutel, c);
+  }
   return cache.get(sleutel);
 }
