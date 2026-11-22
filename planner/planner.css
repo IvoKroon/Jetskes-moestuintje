@@ -67,7 +67,7 @@ svg[aria-hidden] { width: 20px; height: 20px; fill: none; stroke: currentColor; 
 .melding {
   position: absolute;
   left: 50%;
-  top: 10px;
+  bottom: 12px;
   transform: translateX(-50%);
   width: max-content;
   max-width: calc(100% - 24px);
@@ -259,4 +259,15 @@ button.buur { font: inherit; font-size: 13px; font-weight: 700; color: var(--tek
   .balk-onder { grid-template-columns: repeat(4, 160px); justify-content: center; }
   .balk-onder.selectie { grid-template-columns: 1fr; justify-items: center; }
   .sel-knoppen .actie { flex: none; width: 96px; }
+}
+
+.taken { margin: 0 0 8px; padding-left: 20px; }
+.taken li { margin-bottom: 4px; }
+.backup {
+  display: block; width: 100%;
+  font: inherit; font-size: 12px; color: var(--tekst);
+  background: var(--vlak-zacht);
+  border: 1px solid var(--lijn); border-radius: 10px;
+  padding: 8px; margin: 6px 0 8px;
+  resize: vertical;
 }
