@@ -1,9 +1,10 @@
-// De tuin waarmee de planner begint. Vervang dit door de echte tuin van Jetske:
+// De tuinen (locaties) waarmee de planner begint, bijvoorbeeld voortuin en achtertuin. Vervang dit door de echte tuin van Jetske:
 // meet de tuin op, zet de maten in centimeters en pas de onderdelen aan.
 // t = soort onderdeel (zie ONDERDELEN in planner.js), plant-vakken hebben t: 'plant' en p: id van de plant.
+// schatting: true toont bij de eerste keer een melding dat het een schatting is.
 // x, y = linkerbovenhoek, w, h = breedte en lengte, allemaal in cm.
 
-export const STARTTUIN = {
+export const STARTTUINEN = [{
   naam: 'Voorbeeldtuin',
   breedte: 800,
   lengte: 1000,
@@ -32,4 +33,4 @@ export const STARTTUIN = {
     { t: 'plant', p: 'boon', x: 50, y: 750, w: 150, h: 105 },
     { t: 'plant', p: 'ui', x: 250, y: 750, w: 80, h: 100 },
   ],
-};
+}];

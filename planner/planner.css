@@ -271,3 +271,30 @@ button.buur { font: inherit; font-size: 13px; font-weight: 700; color: var(--tek
   padding: 8px; margin: 6px 0 8px;
   resize: vertical;
 }
+
+/* Wissel tussen locaties (voortuin, achtertuin) */
+.tuinwissel {
+  display: flex; gap: 6px;
+  padding: 8px max(12px, env(safe-area-inset-left)) 8px max(12px, env(safe-area-inset-right));
+  background: var(--vlak);
+  border-bottom: 1px solid var(--lijn);
+  overflow-x: auto;
+}
+.locatie {
+  flex: none;
+  min-height: 40px; padding: 6px 14px;
+  font: inherit; font-size: 14px; font-weight: 800;
+  color: var(--tekst); background: var(--vlak-zacht);
+  border: 1px solid var(--lijn); border-radius: 999px;
+  cursor: pointer;
+}
+.locatie[aria-pressed='true'] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.locatie.nieuw { background: transparent; border-style: dashed; color: var(--accent); }
+.tekstveld {
+  display: block; width: 100%;
+  min-height: 44px; padding: 8px 12px;
+  font: inherit; font-size: 16px; color: var(--tekst);
+  background: var(--vlak-zacht); border: 1px solid var(--lijn); border-radius: 10px;
+  margin: 4px 0 8px;
+}
+.knop-plat:disabled { opacity: 0.4; cursor: default; }
