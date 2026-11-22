@@ -322,7 +322,12 @@ function tekenItem(item) {
   // Naam op grote onderdelen
   const label = { kas: 'Kas', schuur: 'Schuur', compost: 'Compost' }[item.t];
   if (label && Math.min(w, h) >= 80) {
-    const t = s('text', { x: w / 2, y: item.t === 'kas' ? h - 22 : h / 2, class: 'label-tekst', 'font-size': Math.min(28, Math.min(w, h) / 4) }, g);
+    const fs = Math.min(24, Math.min(w, h) / 5);
+    const bw = label.length * fs * 0.62 + fs * 1.2;
+    const ly = item.t === 'kas' ? h - fs * 1.6 : h / 2;
+    const pil = s('g', { 'pointer-events': 'none' }, g);
+    s('rect', { x: w / 2 - bw / 2, y: ly - fs * 0.9, width: bw, height: fs * 1.8, rx: fs * 0.9, fill: '#ffffff', 'fill-opacity': 0.92 }, pil);
+    const t = s('text', { x: w / 2, y: ly, class: 'label-tekst', 'font-size': fs }, pil);
     t.textContent = label;
   }
   return g;

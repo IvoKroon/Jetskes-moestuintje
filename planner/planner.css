@@ -61,7 +61,7 @@ svg[aria-hidden] { width: 20px; height: 20px; fill: none; stroke: currentColor; 
 #plan [data-id] { cursor: move; }
 #plan [data-greep] { cursor: nwse-resize; }
 #plan image { image-rendering: pixelated; }
-.label-tekst { font-family: var(--ui); font-weight: 800; fill: rgba(35, 48, 36, 0.75); text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+.label-tekst { font-family: var(--ui); font-weight: 800; fill: #233024; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
 .maat-tekst { font-family: var(--ui); font-weight: 700; fill: var(--tekst); text-anchor: middle; dominant-baseline: central; pointer-events: none; }
 
 .melding {
