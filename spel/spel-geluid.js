@@ -37,14 +37,17 @@ export const geluid = {
       ac = null;
     }
   },
-  zaai: () => toon(220, 0.07, { naar: 330, vol: 0.04 }),
+  zaai: () => toon(220, 0.06, { naar: 330, vol: 0.02 }),
   oogst: (combo) => {
     const k = 2 ** ((Math.min(combo, 5) - 1) * 2 / 12);
     reeks([523 * k, 659 * k, 784 * k], 0.05);
   },
   tik: () => toon(300, 0.05, { type: 'triangle', vol: 0.08 }),
   weg: () => toon(180, 0.12, { type: 'sawtooth', naar: 60, vol: 0.05 }),
-  water: () => reeks([880, 660, 990], 0.04, { type: 'triangle', vol: 0.06 }),
+  water: (combo = 1) => {
+    const k = 2 ** ((Math.min(combo, 5) - 1) * 2 / 12);
+    reeks([880 * k, 660 * k, 990 * k], 0.04, { type: 'triangle', vol: 0.06 });
+  },
   opruimen: () => toon(140, 0.08, { type: 'triangle', naar: 90, vol: 0.08 }),
   nee: () => toon(110, 0.05, { type: 'triangle', vol: 0.06 }),
   au: () => toon(330, 0.35, { type: 'triangle', naar: 90, vol: 0.12 }),
