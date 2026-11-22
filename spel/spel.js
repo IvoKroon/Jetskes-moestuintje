@@ -18,6 +18,8 @@ const H = MARGE * 2 + RIJEN * VAK + (RIJEN - 1) * TUSSEN; // 60
 
 // groeitijd en hoelang hij rijp blijft, in seconden
 const GEWASSEN = {
+  // graan komt het vaakst, groeit snel en is weinig waard
+  graan: { naam: 'Graan', meer: 'graan', groei: 2.2, rijp: 3.5, punten: 5, vanaf: 0, kans: 8, kleur: KLEUR.y },
   radijs: { naam: 'Radijs', meer: 'radijsjes', groei: 3, rijp: 3.2, punten: 10, vanaf: 0, kans: 3, kleur: KLEUR.r },
   wortel: { naam: 'Wortel', meer: 'wortels', groei: 4.5, rijp: 3.6, punten: 20, vanaf: 0, kans: 3, kleur: KLEUR.o },
   tomaat: { naam: 'Tomaat', meer: 'tomaten', groei: 6, rijp: 4, punten: 35, vanaf: 200, kans: 2, kleur: KLEUR.r },

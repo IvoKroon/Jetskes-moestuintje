@@ -78,6 +78,18 @@ export const SPRITES = {
     '.kBoyoBBk.',
     '..kkkkkk..',
   ],
+  graan: [
+    '..k.k.k.k.',
+    '.kykykyky.',
+    '.kyoyoyoyk',
+    'kyoyoyoyok',
+    'kyyoyoyoyk',
+    '.kyyoyoyk.',
+    '..kkooookk',
+    '...kbobk..',
+    '..kbobobk.',
+    '.kbbk.kbbk',
+  ],
   kiemplant: [
     '..........',
     '..........',
