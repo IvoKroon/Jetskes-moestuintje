@@ -407,6 +407,12 @@ let selectieId = null;
 const gekozen = () => ontwerp.items.find((i) => i.id === selectieId) || null;
 const naamVan = (i) => (i.t === 'plant' ? PLANT[i.p].naam : ONDERDELEN[i.t].naam);
 
+// Planten die in een bak, bed of kas staan, gaan mee als je die verplaatst, kopieert, draait of verwijdert.
+function inhoud(c) {
+  if (!ONDERDELEN[c.t]?.beplantbaar) return [];
+  return ontwerp.items.filter((j) => j.t === 'plant' && j.x >= c.x - 1 && j.y >= c.y - 1 && j.x + j.w <= c.x + c.w + 1 && j.y + j.h <= c.y + c.h + 1);
+}
+
 function aantalPlanten(i) {
   const r = PLANT[i.p].ruimte;
   return Math.max(1, Math.floor((i.w + 1) / r)) * Math.max(1, Math.floor((i.h + 1) / r));
@@ -434,6 +440,10 @@ function werkSelectieMaatBij() {
   if (sel.t === 'plant') {
     const n = aantalPlanten(sel);
     tekst = `${n} ${n === 1 ? 'plant' : 'planten'} · ${tekst}`;
+  }
+  else {
+    const erin = inhoud(sel).reduce((a, j) => a + aantalPlanten(j), 0);
+    if (erin) tekst = `${erin} planten erin · ${tekst}`;
   }
   document.getElementById('sel-maat').textContent = tekst;
 }
@@ -468,7 +478,7 @@ svg.addEventListener('pointerdown', (e) => {
     const id = doel.dataset.id;
     if (id !== selectieId) kies(id);
     const i = gekozen();
-    gebaar = { soort: 'sleep', item: i, start: wPunt, x: i.x, y: i.y, voor, veranderd: false };
+    gebaar = { soort: 'sleep', item: i, start: wPunt, x: i.x, y: i.y, voor, veranderd: false, mee: inhoud(i).map((j) => ({ j, x: j.x, y: j.y })) };
   } else {
     gebaar = { soort: 'schuif', start: { x: e.clientX, y: e.clientY }, bx: beeld.x, by: beeld.y, bewogen: false };
     svg.classList.add('slepen');
@@ -513,6 +523,11 @@ svg.addEventListener('pointermove', (e) => {
       i.y = ny;
       gebaar.veranderd = true;
       laagItems.querySelector(`[data-id="${i.id}"]`)?.setAttribute('transform', `translate(${i.x} ${i.y})`);
+      gebaar.mee.forEach((m) => {
+        m.j.x = m.x + (nx - gebaar.x);
+        m.j.y = m.y + (ny - gebaar.y);
+        laagItems.querySelector(`[data-id="${m.j.id}"]`)?.setAttribute('transform', `translate(${m.j.x} ${m.j.y})`);
+      });
       tekenBoven();
     }
   } else if (gebaar.soort === 'maat') {
@@ -645,11 +660,12 @@ document.getElementById('sel-weg').addEventListener('click', () => {
   const sel = gekozen();
   if (!sel) return;
   onthoud();
-  ontwerp.items = ontwerp.items.filter((i) => i !== sel);
+  const mee = inhoud(sel);
+  ontwerp.items = ontwerp.items.filter((i) => i !== sel && !mee.includes(i));
   opslaan();
   kies(null);
   tekenItems();
-  meld(`${naamVan(sel)} weggehaald. Terug met de pijl bovenin.`);
+  meld(`${naamVan(sel)}${mee.length ? ' met planten' : ''} verwijderd. Terug met de pijl bovenin.`);
 });
 document.getElementById('sel-kopie').addEventListener('click', () => {
   const sel = gekozen();
@@ -657,8 +673,11 @@ document.getElementById('sel-kopie').addEventListener('click', () => {
   const kopie = { ...sel, id: nieuwId() };
   kopie.x = klem(sel.x + 20, 0, ontwerp.breedte - sel.w);
   kopie.y = klem(sel.y + 20, 0, ontwerp.lengte - sel.h);
+  const dx = kopie.x - sel.x;
+  const dy = kopie.y - sel.y;
+  const planten = inhoud(sel).map((j) => ({ ...j, id: nieuwId(), x: j.x + dx, y: j.y + dy }));
   onthoud();
-  ontwerp.items.push(kopie);
+  ontwerp.items.push(kopie, ...planten);
   opslaan();
   tekenItems();
   kies(kopie.id);
@@ -667,11 +686,23 @@ document.getElementById('sel-draai').addEventListener('click', () => {
   const sel = gekozen();
   if (!sel) return;
   onthoud();
+  const mee = inhoud(sel);
   const cx = sel.x + sel.w / 2;
   const cy = sel.y + sel.h / 2;
+  const oud = { x: sel.x, y: sel.y, w: sel.w, h: sel.h };
   [sel.w, sel.h] = [Math.min(sel.h, ontwerp.breedte), Math.min(sel.w, ontwerp.lengte)];
   sel.x = klem(rond(cx - sel.w / 2, 5), 0, ontwerp.breedte - sel.w);
   sel.y = klem(rond(cy - sel.h / 2, 5), 0, ontwerp.lengte - sel.h);
+  // Planten draaien een kwartslag mee, om hetzelfde middelpunt
+  const ox = oud.x + oud.w / 2;
+  const oy = oud.y + oud.h / 2;
+  mee.forEach((j) => {
+    const nx = ox - (j.y + j.h - oy);
+    const ny = oy + (j.x - ox);
+    [j.w, j.h] = [j.h, j.w];
+    j.x = nx + (sel.x + sel.w / 2 - ox);
+    j.y = ny + (sel.y + sel.h / 2 - oy);
+  });
   opslaan();
   tekenItems();
   kies(sel.id);
