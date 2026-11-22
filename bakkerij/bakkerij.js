@@ -114,7 +114,7 @@ function tekenPlank(v) {
     lijst.append(li);
   }
   $('plank').hidden = !stuks;
-  $('plankTekst').textContent = `${stuks === 1 ? 'Deze taart is' : `Deze ${stuks} taarten zijn`} samen ${waard} munten waard. Verkoop ze op de markt!`;
+  $('plankTekst').textContent = `Samen ${waard} munten waard. Verkoop ${stuks === 1 ? 'hem' : 'ze'} op de markt!`;
 }
 
 function teken() {
