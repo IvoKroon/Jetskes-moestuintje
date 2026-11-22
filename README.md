@@ -27,5 +27,4 @@ npm run dev
 
 ## Online zetten
 
-Elke push naar `main` zet de site via GitHub Actions op GitHub Pages.
-Eenmalig nodig: in de repository onder Settings, Pages, bij Source "GitHub Actions" kiezen.
+De site staat op Vercel. Vercel herkent Vite: build-commando `npm run build`, output-map `dist`.
