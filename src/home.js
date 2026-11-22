@@ -30,7 +30,7 @@ function render(root) {
   const keuzes = el('div', 'keuzes');
   const spel = el('a', 'knop groen breed');
   spel.href = './spel/';
-  const spelTekst = el('span', '', 'Tuinierspel');
+  const spelTekst = el('span', '', 'Tuinieren');
   spelTekst.append(el('small', '', 'Oogst snel, jaag de beestjes weg'));
   spel.append(sprite('tomaat', { grootte: 40 }), spelTekst);
 
@@ -51,7 +51,7 @@ function render(root) {
   const online = el('section', 'kader weetjes online-top');
   online.hidden = true;
   const ol = el('ol');
-  online.append(el('h2', '', 'Top 5 Moestuin Rush'), ol);
+  online.append(el('h2', '', 'Top 5 Tuinieren'), ol);
   haalTop().then((top) => {
     if (!top?.length) return;
     vulLijst(ol, top.slice(0, 5));
