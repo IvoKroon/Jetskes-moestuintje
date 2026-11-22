@@ -10,9 +10,9 @@ const VAK = 16;
 const TUSSEN = 2;
 const MARGE = 4;
 const KOLOMMEN = 3;
-const RIJEN = 4;
+const RIJEN = 3;
 const W = MARGE * 2 + KOLOMMEN * VAK + (KOLOMMEN - 1) * TUSSEN; // 60
-const H = MARGE * 2 + RIJEN * VAK + (RIJEN - 1) * TUSSEN; // 78
+const H = MARGE * 2 + RIJEN * VAK + (RIJEN - 1) * TUSSEN; // 60
 
 // groeitijd en hoelang hij rijp blijft, in seconden
 const GEWASSEN = {
@@ -29,14 +29,17 @@ const BEESTJES = {
   lieveheersbeestje: { snelheid: 9, leven: 1, punten: -25, straal: 4 },
 };
 
-// Water: na een tijdje krijgen groeiende plantjes dorst
-const DORST_VANAF = 20; // seconden na de start
-const DORST_TIJD = 5; // zo lang kan een plantje zonder water
+// Zaaien en oogsten gaan vanzelf; de speler geeft water en jaagt beestjes weg.
+const DORST_TIJD = 6; // zo lang kan een plantje zonder water
+const SNEL_WATER = 1; // binnen zoveel seconden water geven = extra punten
+// zo lang blijft een vakje leeg voordat er vanzelf gezaaid wordt: rustig in level 1, daarna sneller
+const zaaiPauze = (level) => Math.max(1, 4 - 0.6 * (level - 1));
+const START_TUSSEN = 4; // aan het begin komt er om de zoveel seconden een plantje bij
+const VERS_TIJD = 1; // binnen zoveel seconden na rijp oogsten = vers, extra punten
 
-const LEVEL_DUUR = 25; // seconden per level
-const VERS_TIJD = 0.9; // binnen zoveel seconden na rijp oogsten = vers, extra punten
+const LEVEL_DUUR = 45; // seconden per level
 const COMBO_TIJD = 1.2;
-const MAX_COMBO = 5; // x1, x1.25 ... x2
+const MAX_COMBO = 5; // x1, x1.5 ... x3
 const MAX_HARTJES = 5;
 const HARTJE_PER = 1500; // extra hartje per zoveel punten
 
@@ -64,6 +67,8 @@ let S = null;
 let toestand = 'start'; // start | spelen | pauze | einde
 
 function nieuwSpel() {
+  // in willekeurige volgorde, één voor één een plantje erbij
+  const volgorde = [...Array(KOLOMMEN * RIJEN).keys()].sort(() => Math.random() - 0.5);
   S = {
     vakken: Array.from({ length: KOLOMMEN * RIJEN }, (_, i) => ({
       i,
@@ -75,7 +80,9 @@ function nieuwSpel() {
       groei: 0,
       rijp: 0,
       wiebel: 0,
-      dorstOp: null, // na hoeveel groeitijd hij dorst krijgt
+      wacht: volgorde.indexOf(i) * START_TUSSEN - zaaiPauze(1) + 0.5, // extra wachttijd voor het eerste zaadje
+      dorsten: [], // op welke momenten van de groei hij dorst krijgt (0..1)
+      perfect: true, // steeds snel water gehad
       dorstig: false,
       dorstT: 0,
       verwelkt: null,
@@ -84,15 +91,14 @@ function nieuwSpel() {
     deeltjes: [],
     zwevers: [],
     score: 0,
-    hartjes: 3,
+    hartjes: 5,
     volgendHartje: HARTJE_PER,
     level: 1,
     tijd: 0,
     combo: 0,
-    laatsteOogst: -9,
-    beestjeKlok: 7,
-    lieveKlok: 20,
-    dorstUitgelegd: false,
+    laatsteWater: -9,
+    beestjeKlok: 25,
+    lieveKlok: 15,
     open: new Set(Object.keys(GEWASSEN).filter((g) => GEWASSEN[g].vanaf === 0)),
     geoogst: {},
     weggejaagd: 0,
@@ -103,14 +109,15 @@ function nieuwSpel() {
 const moeilijk = () => {
   const l = S.level - 1;
   return {
-    groei: Math.max(0.55, 1 - 0.06 * l),
-    rijp: Math.max(0.5, 1 - 0.06 * l),
-    beestjeTussen: Math.max(1.4, 5.5 - 0.5 * l),
-    maxBeestjes: Math.min(1 + Math.floor((l + 1) / 2), 6),
-    snel: 1 + 0.06 * l,
-    eet: Math.max(0.55, 1 - 0.05 * l),
-    dorstKans: Math.min(0.8, 0.4 + 0.08 * l),
-    dorstTijd: Math.max(3, DORST_TIJD - 0.25 * l),
+    // level 1 is extra rustig: alles groeit langzamer en blijft langer rijp
+    // en daarna wordt het per level maar een klein beetje moeilijker
+    groei: Math.max(0.6, 1.5 - 0.08 * l),
+    rijp: Math.max(0.6, 1.7 - 0.1 * l),
+    beestjeTussen: Math.max(2, 10 - 0.8 * l),
+    maxBeestjes: Math.min(1 + Math.floor(l / 2), 5),
+    snel: 1 + 0.04 * l,
+    eet: Math.max(0.5, 0.85 - 0.05 * l),
+    dorstTijd: Math.max(3.5, DORST_TIJD - 0.4 * l),
   };
 };
 
@@ -126,48 +133,52 @@ function zaai(v) {
   const naam = kies(lijst);
   const g = GEWASSEN[naam];
   const groei = g.groei * m.groei * rnd(0.85, 1.15);
-  const dorst = S.tijd >= DORST_VANAF && Math.random() < m.dorstKans;
-  Object.assign(v, { fase: 'groeit', gewas: naam, t: 0, groei, rijp: g.rijp * m.rijp, dorstOp: dorst ? groei * rnd(0.3, 0.7) : null, dorstig: false, dorstT: 0, verwelkt: null });
-  stof(v.x + 8, v.y + 12, KLEUR.b, 4);
+  // elk plantje heeft al vroeg dorst en daarna nog eens; trage gewassen en hogere levels vaker
+  let keren = g.groei > 5.5 ? 3 : 2;
+  if (S.level >= 3 && Math.random() < 0.5) keren++;
+  const eerste = rnd(0.08, 0.2);
+  const dorsten = Array.from({ length: keren }, (_, k) => eerste + (k * (0.85 - eerste)) / (keren - 1) + (k ? rnd(-0.05, 0.05) : 0));
+  Object.assign(v, { fase: 'groeit', gewas: naam, t: 0, groei, rijp: g.rijp * m.rijp, dorsten, perfect: true, dorstig: false, dorstT: 0, verwelkt: null });
+  stof(v.x + 8, v.y + 12, KLEUR.b, 3);
   geluid.zaai();
 }
 
 function oogst(v) {
   const g = GEWASSEN[v.gewas];
+  // goed verzorgd (steeds snel water) en vers geoogst = extra punten
   const vers = v.t < VERS_TIJD;
-  S.combo = S.tijd - S.laatsteOogst < COMBO_TIJD ? S.combo + 1 : 1;
-  S.laatsteOogst = S.tijd;
-  const keer = Math.min(S.combo, MAX_COMBO);
-  const punten = Math.round(g.punten * (1 + (keer - 1) * 0.25) * (vers ? 1.5 : 1));
+  const punten = Math.round(g.punten * (v.perfect ? 1.5 : 1) * (vers ? 1.5 : 1));
+  const goud = v.perfect || vers;
   S.geoogst[v.gewas] = (S.geoogst[v.gewas] ?? 0) + 1;
-  zweef(`+${punten}`, v.x + 8, v.y + 2, vers ? KLEUR.y : KLEUR.w);
-  if (keer > 1) zweef(`x${keer}`, v.x + 8, v.y + 9, KLEUR.o, 0.15);
+  zweef(`+${punten}`, v.x + 8, v.y + 2, goud ? KLEUR.y : KLEUR.w);
   stof(v.x + 8, v.y + 7, g.kleur, 8, true);
-  if (vers) stof(v.x + 8, v.y + 5, KLEUR.y, 4, true);
-  geluid.oogst(keer);
+  if (goud) stof(v.x + 8, v.y + 5, KLEUR.y, 4, true);
+  geluid.oogst(v.perfect && vers ? 5 : goud ? 3 : 1);
   trilling(10);
   Object.assign(v, { fase: 'leeg', gewas: null, t: 0 });
   punt(punten);
 }
 
 function geefWater(v) {
+  const snel = v.dorstT < SNEL_WATER;
+  if (!snel) v.perfect = false;
+  S.combo = S.tijd - S.laatsteWater < COMBO_TIJD ? S.combo + 1 : 1;
+  S.laatsteWater = S.tijd;
+  const keer = Math.min(S.combo, MAX_COMBO);
+  const punten = Math.round((snel ? 5 : 2) * (1 + (keer - 1) * 0.5));
   Object.assign(v, { dorstig: false, dorstT: 0 });
   stof(v.x + 8, v.y + 2, KLEUR.u, 6);
-  zweef('+2', v.x + 8, v.y + 2, KLEUR.l);
-  geluid.water();
-  punt(2);
+  zweef(`+${punten}`, v.x + 8, v.y + 2, snel ? KLEUR.l : KLEUR.w);
+  if (keer > 1) zweef(`x${keer}`, v.x + 8, v.y + 9, KLEUR.o, 0.15);
+  geluid.water(keer);
+  trilling(10);
+  punt(punten);
 }
 
 const stadium = (v) => {
   const deel = v.t / v.groei;
   return deel < 0.3 ? 'zaadje' : deel < 0.65 ? 'kiemplant' : 'jong';
 };
-
-function ruimOp(v) {
-  stof(v.x + 8, v.y + 9, KLEUR.x, 6);
-  Object.assign(v, { fase: 'leeg', gewas: null, t: 0 });
-  geluid.opruimen();
-}
 
 function punt(n) {
   S.score = Math.max(0, S.score + n);
@@ -218,7 +229,7 @@ function vrijDoel() {
 function nieuwBeestje() {
   const doel = vrijDoel();
   if (doel === null) return false;
-  const soort = S.level >= 2 && Math.random() < 0.35 ? 'slak' : 'luis';
+  const soort = S.level >= 3 && Math.random() < 0.35 ? 'slak' : 'luis';
   const p = randPunt();
   S.beestjes.push({ soort, ...p, doel, fase: 'loop', leven: BEESTJES[soort].leven, eet: 0, kant: 1, anim: 0, raak: 0, zij: Math.random() < 0.5 ? -1 : 1 });
   return true;
@@ -323,7 +334,7 @@ function werkBeestjesBij(dt) {
   if (S.beestjeKlok <= 0 && plagen.length < m.maxBeestjes) {
     S.beestjeKlok = nieuwBeestje() ? m.beestjeTussen * rnd(0.7, 1.3) : 0.5;
   }
-  if (S.level >= 2) {
+  if (S.level >= 3) {
     S.lieveKlok -= dt;
     if (S.lieveKlok <= 0) {
       nieuwLieveheersbeestje();
@@ -374,7 +385,7 @@ function werkBij(dt) {
     melding(`Level ${level}! Alles gaat sneller`);
     geluid.level();
     toonStand();
-    if (level === 2) setTimeout(() => toestand === 'spelen' && melding('Pas op: slakken! Tik ze 2x'), 2000);
+    if (level === 3) setTimeout(() => toestand === 'spelen' && melding('Pas op: slakken! Tik ze 2x'), 2000);
   }
 
   for (const v of S.vakken) {
@@ -389,19 +400,22 @@ function werkBij(dt) {
         verliesHartje();
         if (toestand !== 'spelen') return;
       }
-    } else if (v.fase === 'groeit' && v.dorstOp !== null && v.t >= v.dorstOp) {
-      Object.assign(v, { dorstig: true, dorstT: 0, dorstOp: null });
-      if (!S.dorstUitgelegd) {
-        S.dorstUitgelegd = true;
-        melding('Dorst! Tik plantjes met een druppel om water te geven', 'gieter');
-      }
+    } else if (v.fase === 'groeit' && v.dorsten.length && v.t / v.groei >= v.dorsten[0]) {
+      v.dorsten.shift();
+      Object.assign(v, { dorstig: true, dorstT: 0 });
     } else if (v.fase === 'groeit' && v.t >= v.groei) Object.assign(v, { fase: 'rijp', t: 0 });
     else if (v.fase === 'rijp' && v.t >= v.rijp) {
-      Object.assign(v, { fase: 'rot', t: 0 });
+      // te laat geoogst: hij rot
+      Object.assign(v, { fase: 'rot', t: 0, verwelkt: null });
       zweef('-', v.x + 8, v.y + 3, KLEUR.r);
       verliesHartje();
       if (toestand !== 'spelen') return;
-    } else if (v.fase === 'rot' && v.t >= 5) Object.assign(v, { fase: 'leeg', gewas: null, t: 0 });
+    }
+    else if (v.fase === 'leeg' && v.t >= zaaiPauze(S.level) + v.wacht) {
+      v.wacht = 0;
+      zaai(v);
+    }
+    else if (v.fase === 'rot' && v.t >= 3) Object.assign(v, { fase: 'leeg', gewas: null, t: 0 });
     else if (v.fase === 'opgegeten' && v.t >= 1.2) Object.assign(v, { fase: 'leeg', t: 0 });
   }
 
@@ -443,10 +457,13 @@ function tik(x, y) {
 
   const v = S.vakken.find((v) => x >= v.x - 1 && x < v.x + VAK + 1 && y >= v.y - 1 && y < v.y + VAK + 1);
   if (!v) return;
-  if (v.fase === 'leeg') zaai(v);
+  if (v.fase === 'groeit' && v.dorstig) geefWater(v);
   else if (v.fase === 'rijp') oogst(v);
-  else if (v.fase === 'rot') ruimOp(v);
-  else if (v.fase === 'groeit' && v.dorstig) geefWater(v);
+  else if (v.fase === 'rot') {
+    stof(v.x + 8, v.y + 9, KLEUR.x, 6);
+    Object.assign(v, { fase: 'leeg', gewas: null, t: 0 });
+    geluid.opruimen();
+  }
   else if (v.fase === 'groeit') {
     v.wiebel = 0.2;
     geluid.nee();
@@ -489,7 +506,7 @@ function teken() {
       ctx.drawImage(plaatje(v.gewas), sx, sy + hup);
       const kleur = over > 0.6 ? KLEUR.g : over > 0.3 ? KLEUR.y : KLEUR.r;
       if (over > 0.3 || knipper) balk(v, over, kleur);
-      if (v.t < VERS_TIJD) ctx.drawImage(plaatje(knipper ? 'glinster' : 'glinsterKlein'), v.x + 11, v.y - 1);
+      if (v.t < VERS_TIJD || v.perfect) ctx.drawImage(plaatje(knipper ? 'glinster' : 'glinsterKlein'), v.x + 11, v.y - 1);
     } else if (v.fase === 'rot') {
       ctx.drawImage(plaatje(v.verwelkt ?? v.gewas, { rot: true }), sx, sy + 1);
       // vliegje
@@ -588,7 +605,7 @@ function start() {
   toonStand();
   toestand = 'spelen';
   toon(null);
-  melding('Tik op de aarde om te zaaien!', 'zaadje');
+  melding('Druppel? Tik het plantje om water te geven!', 'gieter');
 }
 
 function pauzeer() {
