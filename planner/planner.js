@@ -91,9 +91,40 @@ function geldig(o) {
   return o && Number.isFinite(o.breedte) && Number.isFinite(o.lengte) && Array.isArray(o.items);
 }
 
-let ontwerp = lees(SLEUTEL, null);
-if (!geldig(ontwerp)) ontwerp = voorbeeldtuin();
-ontwerp.items = ontwerp.items.filter((i) => (i.t === 'plant' ? PLANT[i.p] : ONDERDELEN[i.t]));
+// Je kunt meerdere locaties hebben (bijvoorbeeld voortuin en achtertuin). `ontwerp` is de locatie die je nu ziet.
+const SLEUTEL_TUINEN = 'moestuin.tuinen';
+let tuinen = [];
+let actiefId = null;
+let ontwerp = null;
+let eersteKeer = false;
+
+function schoon(t) {
+  if (!t.id) t.id = nieuwId();
+  if (!t.naam) t.naam = 'Tuin';
+  t.items = t.items.filter((i) => (i.t === 'plant' ? PLANT[i.p] : ONDERDELEN[i.t]));
+  return t;
+}
+
+function laadTuinen() {
+  const opgeslagen = lees(SLEUTEL_TUINEN, null);
+  if (opgeslagen && Array.isArray(opgeslagen.tuinen)) tuinen = opgeslagen.tuinen.filter(geldig).map(schoon);
+  if (!tuinen.length) {
+    const oud = lees(SLEUTEL, null); // de tuin uit de tijd van één locatie
+    eersteKeer = !geldig(oud);
+    tuinen = [schoon({ naam: eersteKeer ? STARTTUIN.naam : 'Mijn tuin', ...(eersteKeer ? voorbeeldtuin() : oud) })];
+  }
+  ontwerp = tuinen.find((t) => t.id === opgeslagen?.actief) || tuinen[0];
+  actiefId = ontwerp.id;
+}
+laadTuinen();
+
+// Vervangt de inhoud van de getoonde locatie (ongedaan maken, leeg, voorbeeld, back-up), met behoud van id en naam.
+function vervangOntwerp(nieuw) {
+  nieuw.id = actiefId;
+  nieuw.naam = ontwerp.naam;
+  tuinen = tuinen.map((t) => (t.id === actiefId ? nieuw : t));
+  ontwerp = nieuw;
+}
 
 const geschiedenis = [];
 function onthoud(stand = JSON.stringify(ontwerp)) {
@@ -102,7 +133,7 @@ function onthoud(stand = JSON.stringify(ontwerp)) {
   knopTerug.disabled = false;
 }
 function opslaan() {
-  bewaar(SLEUTEL, ontwerp);
+  bewaar(SLEUTEL_TUINEN, { actief: actiefId, tuinen });
 }
 
 // ---------- Elementen ----------
@@ -613,7 +644,7 @@ document.getElementById('passend').addEventListener('click', passend);
 knopTerug.addEventListener('click', () => {
   const vorige = geschiedenis.pop();
   if (!vorige) return;
-  ontwerp = JSON.parse(vorige);
+  vervangOntwerp(JSON.parse(vorige));
   opslaan();
   if (!gekozen()) kies(null);
   tekenTuin();
@@ -926,19 +957,20 @@ function openPlantinfo(id, vak = null) {
 
 document.getElementById('lijst-knop').addEventListener('click', () => {
   const telling = new Map();
-  ontwerp.items.filter((i) => i.t === 'plant').forEach((i) => {
-    const t = telling.get(i.p) || { aantal: 0, opp: 0, vakken: 0 };
+  tuinen.forEach((tuin) => tuin.items.filter((i) => i.t === 'plant').forEach((i) => {
+    const t = telling.get(i.p) || { aantal: 0, opp: 0, vakken: 0, waar: new Set() };
     t.aantal += aantalPlanten(i);
     t.opp += i.w * i.h;
     t.vakken++;
+    t.waar.add(tuin.naam);
     telling.set(i.p, t);
-  });
+  }));
   const lijst = el('div', 'lijst');
   [...telling.entries()].sort((a, b) => PLANT[a[0]].naam.localeCompare(PLANT[b[0]].naam)).forEach(([id, t]) => {
     const rij = el('button', 'lijst-rij');
     rij.type = 'button';
     const midden = el('span');
-    midden.append(el('strong', '', PLANT[id].naam), el('small', '', `${(t.opp / 10000).toLocaleString('nl-NL', { maximumFractionDigits: 1 })} m² · ${t.vakken} ${t.vakken === 1 ? 'vak' : 'vakken'}`));
+    midden.append(el('strong', '', PLANT[id].naam), el('small', '', `${(t.opp / 10000).toLocaleString('nl-NL', { maximumFractionDigits: 1 })} m² · ${t.vakken} ${t.vakken === 1 ? 'vak' : 'vakken'}${tuinen.length > 1 ? ` · ${[...t.waar].join(', ')}` : ''}`));
     rij.append(spriteImg(id, 32), midden, el('span', 'aantal', String(t.aantal)));
     rij.addEventListener('click', () => openPlantinfo(id));
     lijst.append(rij);
@@ -952,7 +984,7 @@ document.getElementById('lijst-knop').addEventListener('click', () => {
 // ---------- Deze maand ----------
 
 document.getElementById('maand-knop').addEventListener('click', () => {
-  const inTuin = [...new Set(ontwerp.items.filter((i) => i.t === 'plant').map((i) => i.p))];
+  const inTuin = [...new Set(tuinen.flatMap((t) => t.items).filter((i) => i.t === 'plant').map((i) => i.p))];
   const groep = (titel, ids, leeg) => {
     const d = el('div');
     d.append(el('h3', '', titel), ids.length ? burenLijst(ids, '', (id) => openPlantinfo(id)) : el('p', 'leeg', leeg));
@@ -971,27 +1003,99 @@ document.getElementById('maand-knop').addEventListener('click', () => {
   ]);
 });
 
+// ---------- Locaties: voortuin, achtertuin en meer ----------
+
+function maakStapper(label, waarde, zet) {
+  const rij = el('div', 'maat-rij');
+  const st = el('div', 'stapper');
+  const min = el('button', '', '−');
+  const out = el('output', '', meter(waarde));
+  const plus = el('button', '', '+');
+  min.type = plus.type = 'button';
+  min.setAttribute('aria-label', `${label} kleiner`);
+  plus.setAttribute('aria-label', `${label} groter`);
+  const pas = (d) => { waarde = klem(waarde + d, 200, 3000); out.textContent = meter(waarde); zet(waarde); };
+  min.addEventListener('click', () => pas(-50));
+  plus.addEventListener('click', () => pas(50));
+  st.append(min, out, plus);
+  rij.append(el('strong', '', label), st);
+  return rij;
+}
+
+const elWissel = document.getElementById('tuinwissel');
+
+function tekenWissel() {
+  elWissel.replaceChildren();
+  tuinen.forEach((t) => {
+    const b = el('button', 'locatie', t.naam);
+    b.type = 'button';
+    b.setAttribute('aria-pressed', String(t.id === actiefId));
+    b.addEventListener('click', () => wisselNaar(t.id));
+    elWissel.append(b);
+  });
+  const plus = el('button', 'locatie nieuw', '+ Locatie');
+  plus.type = 'button';
+  plus.addEventListener('click', openNieuweLocatie);
+  elWissel.append(plus);
+  elWissel.querySelector('[aria-pressed="true"]')?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+}
+
+function wisselNaar(id) {
+  if (id === actiefId) return;
+  kies(null);
+  actiefId = id;
+  ontwerp = tuinen.find((t) => t.id === id);
+  geschiedenis.length = 0;
+  knopTerug.disabled = true;
+  opslaan();
+  tekenWissel();
+  tekenTuin();
+  tekenItems();
+  passend();
+}
+
+function openNieuweLocatie() {
+  const voorstel = !tuinen.some((t) => /achter/i.test(t.naam)) ? 'Achtertuin' : !tuinen.some((t) => /voor/i.test(t.naam)) ? 'Voortuin' : `Tuin ${tuinen.length + 1}`;
+  let b = 500;
+  let l = 800;
+  const naam = el('input', 'tekstveld');
+  naam.id = 'locatie-naam';
+  naam.type = 'text';
+  naam.maxLength = 24;
+  naam.value = voorstel;
+  naam.setAttribute('aria-label', 'Naam van de locatie');
+  const voeg = el('button', 'knop-plat groen', 'Locatie toevoegen');
+  voeg.type = 'button';
+  voeg.addEventListener('click', () => {
+    const nieuw = { id: nieuwId(), naam: naam.value.trim() || voorstel, breedte: b, lengte: l, items: [] };
+    tuinen.push(nieuw);
+    actiefId = null;
+    sluitBlad();
+    wisselNaar(nieuw.id);
+    meld(`${nieuw.naam} toegevoegd. Begin met Toevoegen.`);
+  });
+  openBlad('Nieuwe locatie', [
+    el('p', 'leeg', 'Bijvoorbeeld je voortuin of achtertuin. Elke locatie heeft een eigen plattegrond. Wissel er bovenin tussen.'),
+    el('h3', '', 'Naam'),
+    naam,
+    el('h3', '', 'Hoe groot?'),
+    maakStapper('Breedte', b, (v) => { b = v; }),
+    maakStapper('Lengte', l, (v) => { l = v; }),
+    el('div', 'knoppen-rij', '').appendChild(voeg).parentNode,
+  ]);
+}
+
 // ---------- Tuinmaat ----------
 
 document.getElementById('tuin-knop').addEventListener('click', () => {
   let b = ontwerp.breedte;
   let l = ontwerp.lengte;
-  const stapper = (label, waarde, zet) => {
-    const rij = el('div', 'maat-rij');
-    const st = el('div', 'stapper');
-    const min = el('button', '', '−');
-    const out = el('output', '', meter(waarde));
-    const plus = el('button', '', '+');
-    min.type = plus.type = 'button';
-    min.setAttribute('aria-label', `${label} kleiner`);
-    plus.setAttribute('aria-label', `${label} groter`);
-    const pas = (d) => { waarde = klem(waarde + d, 200, 3000); out.textContent = meter(waarde); zet(waarde); bevestigd = false; waarschuwing.hidden = true; toepassen.textContent = 'Maat aanpassen'; };
-    min.addEventListener('click', () => pas(-50));
-    plus.addEventListener('click', () => pas(50));
-    st.append(min, out, plus);
-    rij.append(el('strong', '', label), st);
-    return rij;
-  };
+  const stapper = (label, waarde, zet) => maakStapper(label, waarde, (v) => {
+    zet(v);
+    bevestigd = false;
+    waarschuwing.hidden = true;
+    toepassen.textContent = 'Maat aanpassen';
+  });
   const toepassen = el('button', 'knop-plat groen', 'Maat aanpassen');
   const waarschuwing = el('p', 'waarschuwing');
   waarschuwing.hidden = true;
@@ -1035,7 +1139,7 @@ document.getElementById('tuin-knop').addEventListener('click', () => {
   voorbeeld.type = 'button';
   voorbeeld.addEventListener('click', () => {
     onthoud();
-    ontwerp = voorbeeldtuin();
+    vervangOntwerp(voorbeeldtuin());
     opslaan();
     kies(null);
     tekenTuin();
@@ -1049,7 +1153,7 @@ document.getElementById('tuin-knop').addEventListener('click', () => {
   leeg.addEventListener('click', () => {
     if (!zeker) { zeker = true; leeg.textContent = 'Zeker weten? Tik nog een keer'; return; }
     onthoud();
-    ontwerp = { breedte: b, lengte: l, items: [] };
+    vervangOntwerp({ breedte: b, lengte: l, items: [] });
     opslaan();
     kies(null);
     tekenTuin();
@@ -1063,7 +1167,37 @@ document.getElementById('tuin-knop').addEventListener('click', () => {
   bewaren.type = 'button';
   bewaren.addEventListener('click', openBackup);
   knoppen.append(waarschuwing, toepassen, bewaren, voorbeeld, leeg);
-  openBlad('Hoe groot is je tuin?', [
+  const naamveld = el('input', 'tekstveld');
+  naamveld.id = 'tuin-naam';
+  naamveld.type = 'text';
+  naamveld.maxLength = 24;
+  naamveld.value = ontwerp.naam;
+  naamveld.setAttribute('aria-label', 'Naam van deze locatie');
+  naamveld.addEventListener('change', () => {
+    ontwerp.naam = naamveld.value.trim() || ontwerp.naam;
+    opslaan();
+    tekenWissel();
+  });
+  const verwijder = el('button', 'knop-plat rood', 'Verwijder deze locatie');
+  verwijder.type = 'button';
+  verwijder.disabled = tuinen.length < 2;
+  let zekerLocatie = false;
+  verwijder.addEventListener('click', () => {
+    if (!zekerLocatie) { zekerLocatie = true; verwijder.textContent = `${ontwerp.naam} met alles erin verwijderen? Tik nog een keer`; return; }
+    const weg = ontwerp.naam;
+    const rest = tuinen.filter((t) => t.id !== actiefId);
+    tuinen = rest;
+    actiefId = null;
+    sluitBlad();
+    wisselNaar(rest[0].id);
+    opslaan();
+    meld(`${weg} verwijderd.`);
+  });
+  knoppen.append(verwijder);
+  openBlad('Deze locatie', [
+    el('h3', '', 'Naam'),
+    naamveld,
+    el('h3', '', 'Hoe groot is je tuin?'),
     el('p', 'leeg', 'Meet je tuin op en vul hier de maten in. De lijnen op de plattegrond staan om de meter.'),
     stapper('Breedte', b, (v) => { b = v; }),
     stapper('Lengte', l, (v) => { l = v; }),
@@ -1082,7 +1216,7 @@ function openBackup() {
   uit.id = 'backup-uit';
   uit.readOnly = true;
   uit.rows = 4;
-  uit.value = JSON.stringify(ontwerp);
+  uit.value = JSON.stringify({ versie: 2, actief: actiefId, tuinen });
   uit.setAttribute('aria-label', 'Back-up van je tuin');
   const kopieer = el('button', 'knop-plat groen', 'Kopieer back-up');
   kopieer.type = 'button';
@@ -1109,12 +1243,24 @@ function openBackup() {
   terugzetten.addEventListener('click', () => {
     try {
       const nieuw = JSON.parse(erin.value.trim());
-      if (!geldig(nieuw)) throw new Error('ongeldig');
-      nieuw.items = nieuw.items.filter((i) => (i.t === 'plant' ? PLANT[i.p] : ONDERDELEN[i.t]));
-      onthoud();
-      ontwerp = nieuw;
-      opslaan();
       kies(null);
+      if (Array.isArray(nieuw.tuinen)) {
+        const lijst = nieuw.tuinen.filter(geldig).map(schoon);
+        if (!lijst.length) throw new Error('ongeldig');
+        tuinen = lijst;
+        ontwerp = tuinen.find((t) => t.id === nieuw.actief) || tuinen[0];
+        actiefId = ontwerp.id;
+        geschiedenis.length = 0;
+        knopTerug.disabled = true;
+      } else {
+        // een back-up uit de tijd van één locatie vervangt de getoonde locatie
+        if (!geldig(nieuw)) throw new Error('ongeldig');
+        nieuw.items = nieuw.items.filter((i) => (i.t === 'plant' ? PLANT[i.p] : ONDERDELEN[i.t]));
+        onthoud();
+        vervangOntwerp(nieuw);
+      }
+      opslaan();
+      tekenWissel();
       tekenTuin();
       tekenItems();
       passend();
@@ -1152,8 +1298,9 @@ window.addEventListener('orientationchange', () => setTimeout(passend, 300));
 navigator.storage?.persist?.().catch?.(() => {});
 const bezoeken = (lees('moestuin.bezoeken', 0) || 0) + 1;
 bewaar('moestuin.bezoeken', bezoeken);
-if (!lees(SLEUTEL, null)) {
-  opslaan();
+tekenWissel();
+opslaan(); // ook na de overstap van de oude opslag
+if (eersteKeer) {
   meld('Dit is een voorbeeldtuin. Tik op iets om het aan te passen.');
 } else if (bezoeken >= 3 && !inBeginscherm() && !lees('moestuin.tipGezien', false)) {
   bewaar('moestuin.tipGezien', true);
