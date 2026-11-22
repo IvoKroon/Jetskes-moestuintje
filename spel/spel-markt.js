@@ -1,4 +1,5 @@
 // De markt: verkoop je oogst voor munten en koop daarmee de katten vrij.
+// De bakkerij (eigen scherm): bak taarten van je oogst, die je op de markt verkoopt.
 // Alles wordt op het apparaat bewaard (los van de online highscore, die alleen over de score gaat).
 import { lees, bewaar } from '../shared/opslag.js';
 import { plaatjeUrl, katPlaatje } from './spel-sprites.js';
@@ -83,6 +84,12 @@ const el = (tag, klasse, tekst) => {
 };
 const img = (src, klasse = 'sprite') => Object.assign(document.createElement('img'), { src, className: klasse, alt: '' });
 
+function beurs() {
+  const p = el('p', 'beurs');
+  p.append(img(plaatjeUrl('muntje')), el('span', '', `${munten()} munten`));
+  return p;
+}
+
 /**
  * Tekent de markt in het gegeven element.
  * `namen` geeft per gewas { naam, meer } voor de tekstjes.
@@ -90,11 +97,7 @@ const img = (src, klasse = 'sprite') => Object.assign(document.createElement('im
 export function toonMarkt(doel, gewasNamen) {
   const namen = { ...gewasNamen, ...RECEPTEN };
   const v = voorraad();
-  doel.replaceChildren();
-
-  const beurs = el('p', 'beurs');
-  beurs.append(img(plaatjeUrl('muntje')), el('span', '', `${munten()} munten`));
-  doel.append(beurs);
+  doel.replaceChildren(beurs());
 
   // --- groentekraam ---
   doel.append(el('h3', '', 'Jouw kraam'));
@@ -127,37 +130,6 @@ export function toonMarkt(doel, gewasNamen) {
     doel.append(alles);
   }
 
-  // --- bakkerij ---
-  doel.append(el('h3', '', 'Bakkerij'));
-  const bakkerij = el('ul', 'bakkerij');
-  for (const [recept, r] of Object.entries(RECEPTEN)) {
-    const li = el('li');
-    const wat = el('div', 'wat');
-    wat.append(el('strong', '', `${r.naam}`), el('small', '', `verkoop voor ${r.prijs} munten`));
-    // per ingrediënt: wat je hebt van wat je nodig hebt; rood als je nog iets mist
-    const nodig = el('div', 'nodig');
-    for (const [g, n] of Object.entries(r.nodig)) {
-      const heb = Math.min(v[g] ?? 0, n);
-      const stukje = el('span', heb >= n ? 'genoeg' : 'mist');
-      stukje.append(img(plaatjeUrl(g)), `${heb}/${n}`);
-      nodig.append(stukje);
-    }
-    wat.append(nodig);
-    const kan = kanBakken(recept, v);
-    const knop = el('button', `knop klein${kan ? ' groen' : ''}`, 'Bak');
-    knop.disabled = !kan;
-    knop.setAttribute('aria-label', `Bak een ${r.naam.toLowerCase()}`);
-    knop.addEventListener('click', () => {
-      if (!bak(recept)) return;
-      geluid.wakker();
-      geluid.level();
-      toonMarkt(doel, gewasNamen);
-    });
-    li.append(img(plaatjeUrl(recept)), wat, knop);
-    bakkerij.append(li);
-  }
-  doel.append(bakkerij);
-
   // --- katten ---
   doel.append(el('h3', '', 'Katten'));
   const katten = el('ul', 'katten');
@@ -187,4 +159,42 @@ export function toonMarkt(doel, gewasNamen) {
     katten.append(li);
   }
   doel.append(katten);
+}
+
+/** Tekent de bakkerij: van je oogst bak je taarten, die je daarna op de markt verkoopt. */
+export function toonBakkerij(doel) {
+  const v = voorraad();
+  doel.replaceChildren(beurs());
+  const taarten = Object.keys(RECEPTEN).reduce((n, r) => n + (v[r] ?? 0), 0);
+  doel.append(el('p', 'bak-uitleg', taarten
+    ? `Je hebt ${taarten} ${taarten === 1 ? 'taart' : 'taarten'} klaarstaan. Verkoop ze op de markt!`
+    : 'Bak een taart van je oogst. Op de markt levert hij meer op dan de losse groente.'));
+  const bakkerij = el('ul', 'bakkerij');
+  for (const [recept, r] of Object.entries(RECEPTEN)) {
+    const li = el('li');
+    const wat = el('div', 'wat');
+    wat.append(el('strong', '', `${r.naam}`), el('small', '', `verkoop voor ${r.prijs} munten`));
+    // per ingrediënt: wat je hebt van wat je nodig hebt; rood als je nog iets mist
+    const nodig = el('div', 'nodig');
+    for (const [g, n] of Object.entries(r.nodig)) {
+      const heb = Math.min(v[g] ?? 0, n);
+      const stukje = el('span', heb >= n ? 'genoeg' : 'mist');
+      stukje.append(img(plaatjeUrl(g)), `${heb}/${n}`);
+      nodig.append(stukje);
+    }
+    wat.append(nodig);
+    const kan = kanBakken(recept, v);
+    const knop = el('button', `knop klein${kan ? ' groen' : ''}`, 'Bak');
+    knop.disabled = !kan;
+    knop.setAttribute('aria-label', `Bak een ${r.naam.toLowerCase()}`);
+    knop.addEventListener('click', () => {
+      if (!bak(recept)) return;
+      geluid.wakker();
+      geluid.level();
+      toonBakkerij(doel);
+    });
+    li.append(img(plaatjeUrl(recept)), wat, knop);
+    bakkerij.append(li);
+  }
+  doel.append(bakkerij);
 }

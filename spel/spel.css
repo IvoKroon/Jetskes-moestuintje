@@ -112,10 +112,14 @@ body.speelt #spel { bottom: env(safe-area-inset-bottom); }
 .eindscore { font-size: 32px; margin: 4px 0 12px; color: var(--oranje); text-shadow: 3px 3px 0 var(--inkt); }
 
 /* Markt */
-.naar-markt img { width: 24px; height: 24px; }
+.naar-markt img, .naar-bakkerij img { width: 24px; height: 24px; }
+.knoppen-rij { display: flex; gap: 12px; margin-top: 12px; }
+.knoppen-rij .knop { flex: 1; min-width: 0; padding-left: 8px; padding-right: 8px; }
+.knoppen-rij .knop + .knop { margin-top: 0; }
+.bak-uitleg { font-size: 10px; line-height: 1.6; text-align: left; margin: 0 0 8px; }
 .beurs { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 14px; margin-bottom: 16px; }
 .beurs img { width: 28px; height: 28px; }
-#markt h3 { text-align: left; margin: 8px 0; }
+#markt h3, #bakkerij h3 { text-align: left; margin: 8px 0; }
 .kraam, .katten { list-style: none; padding: 0; margin: 0 0 12px; text-align: left; font-size: 10px; }
 .kraam li, .katten li { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 2px dashed rgb(43 29 20 / 0.2); }
 .kraam li.leeg { border: 0; opacity: 0.7; }

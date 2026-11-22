@@ -40,10 +40,13 @@
               <li><img data-sprite="tomaat" class="sprite" alt="" />Rijp? Tik om te oogsten voordat het rot. Snel = meer punten</li>
               <li><img data-sprite="luis" class="sprite" alt="" />Tik luizen en slakken weg voordat ze alles opeten</li>
               <li><img data-sprite="lieveheersbeestje" class="sprite" alt="" />Lieveheersbeestjes zijn vriendjes: niet tikken!</li>
-              <li><img data-sprite="muntje" class="sprite" alt="" />Op de markt verkoop je je oogst, bak je taarten en koop je de katten Dexter en Willem</li>
+              <li><img data-sprite="muntje" class="sprite" alt="" />In de bakkerij bak je taarten van je oogst. Op de markt verkoop je alles en koop je de katten Dexter en Willem</li>
             </ul>
             <button id="startKnop" class="knop groen breed">Start</button>
-            <button class="knop breed naar-markt"><img data-sprite="muntje" class="sprite" alt="" />Markt en bakkerij</button>
+            <div class="knoppen-rij">
+              <button class="knop naar-markt"><img data-sprite="muntje" class="sprite" alt="" />Markt</button>
+              <button class="knop naar-bakkerij"><img data-sprite="aardbeientaart" class="sprite" alt="" />Bakkerij</button>
+            </div>
             <div class="records" hidden>
               <h3 id="record">Record 0</h3>
               <ol id="startScores"></ol>
@@ -55,7 +58,17 @@
           <div class="kader">
             <h2>Markt</h2>
             <div id="marktInhoud"></div>
-            <button id="marktTerug" class="knop breed">Terug</button>
+            <button class="knop breed naar-bakkerij"><img data-sprite="aardbeientaart" class="sprite" alt="" />Naar de bakkerij</button>
+            <button class="knop breed terug">Terug</button>
+          </div>
+        </section>
+
+        <section id="bakkerij" class="scherm" hidden>
+          <div class="kader">
+            <h2>Bakkerij</h2>
+            <div id="bakkerijInhoud"></div>
+            <button class="knop groen breed naar-markt"><img data-sprite="muntje" class="sprite" alt="" />Naar de markt</button>
+            <button class="knop breed terug">Terug</button>
           </div>
         </section>
 
