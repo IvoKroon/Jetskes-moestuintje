@@ -1,0 +1,206 @@
+/* Moestuinplanner. Bouwt voort op ../shared/style.css (variabelen, .kader, .knop, .menu). */
+
+.planner-kop { font-size: 16px; text-align: center; margin: 4px 0 16px; }
+
+/* Gereedschap */
+.gereedschap {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.tool {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-height: 64px;
+  padding: 6px 2px;
+  font: inherit;
+  font-size: 7px;
+  color: var(--inkt);
+  background: var(--papier);
+  border: var(--rand) solid var(--inkt);
+  cursor: pointer;
+  user-select: none;
+}
+.tool[aria-pressed='true'] { background: var(--geel); transform: translate(2px, 2px); }
+.tool .sprite, .tegel-icoon, .gum-icoon, .kijk-icoon { width: 24px; height: 24px; display: block; }
+.tegel-icoon { background-size: 100% 100%; image-rendering: pixelated; border: 2px solid var(--inkt); }
+.gum-icoon {
+  background:
+    linear-gradient(var(--inkt), var(--inkt)) center / 100% 4px no-repeat,
+    var(--rood);
+  border: 2px solid var(--inkt);
+  transform: rotate(45deg) scale(0.8);
+}
+.kijk-icoon {
+  font-size: 14px;
+  line-height: 20px;
+  text-align: center;
+  background: var(--lucht);
+  border: 2px solid var(--inkt);
+  border-radius: 50%;
+}
+
+.hint { font-size: 8px; min-height: 2.6em; margin: 4px 0 8px; text-align: center; }
+
+/* De tuin zelf */
+.tuin-kader {
+  border: var(--rand) solid var(--inkt);
+  box-shadow: var(--schaduw);
+  background: var(--inkt);
+  width: max-content;
+  max-width: 100%;
+  margin: 0 auto 16px;
+  overflow: auto;
+}
+.tuin {
+  --cel: 40px;
+  display: grid;
+  grid-template-columns: repeat(var(--kolommen), var(--cel));
+  grid-auto-rows: var(--cel);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: crosshair;
+}
+.cel {
+  position: relative;
+  background-size: 100% 100%;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+.cel img {
+  position: absolute;
+  inset: 12%;
+  width: 76%;
+  height: 76%;
+  pointer-events: none;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+/* Rood uitroepteken als een plant naast een slechte buur staat */
+.cel.ruzie::after {
+  content: '!';
+  position: absolute;
+  top: 0; right: 0;
+  width: 12px; height: 12px;
+  font-size: 8px;
+  line-height: 12px;
+  text-align: center;
+  color: var(--wit);
+  background: var(--rood);
+  border: 1px solid var(--inkt);
+  pointer-events: none;
+}
+.cel.gekozen { outline: 3px solid var(--geel); outline-offset: -3px; z-index: 1; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .cel.nieuw img { animation: plop 0.25s steps(3); }
+  @keyframes plop { 0% { transform: scale(0.3); } 100% { transform: scale(1); } }
+}
+
+.acties { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.acties .knop { font-size: 8px; padding: 8px 4px; min-height: 44px; }
+.acties .knop:disabled { opacity: 0.5; cursor: default; }
+
+/* Onderblad */
+.blad-achtergrond {
+  position: fixed; inset: 0;
+  background: rgba(43, 29, 20, 0.5);
+  z-index: 20;
+}
+.blad {
+  position: fixed;
+  left: 8px; right: 8px;
+  bottom: calc(var(--menu-hoogte) + 8px + env(safe-area-inset-bottom));
+  max-width: 544px;
+  margin: 0 auto;
+  max-height: calc(100dvh - var(--menu-hoogte) - 40px);
+  overflow-y: auto;
+  z-index: 21;
+  font-size: 9px;
+}
+.blad[hidden], .blad-achtergrond[hidden] { display: none; }
+.blad-kop { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.blad-kop h2 { font-size: 12px; margin: 0; display: flex; align-items: center; gap: 10px; }
+.blad-kop h2 img { width: 32px; height: 32px; }
+.sluit {
+  flex: none;
+  width: 40px; height: 40px;
+  font: inherit; font-size: 12px;
+  background: var(--rood); color: var(--wit);
+  border: var(--rand) solid var(--inkt);
+  cursor: pointer;
+}
+
+/* Plantkeuze */
+.filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.filter {
+  font: inherit; font-size: 7px;
+  padding: 6px 8px;
+  background: var(--wit);
+  border: 2px solid var(--inkt);
+  cursor: pointer;
+}
+.filter[aria-pressed='true'] { background: var(--gras); }
+.plantlijst { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 8px; }
+.plantkeuze {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 8px 2px;
+  font: inherit; font-size: 7px;
+  line-height: 1.4;
+  text-align: center;
+  overflow-wrap: anywhere;
+  background: var(--wit);
+  border: 3px solid var(--inkt);
+  cursor: pointer;
+}
+.plantkeuze img { width: 40px; height: 40px; }
+.plantkeuze.nu { background: #e9f8d8; }
+.plantkeuze[aria-pressed='true'] { background: var(--geel); }
+.legenda { font-size: 7px; margin: 12px 0 0; }
+
+/* Plantinfo */
+.info-rij { display: grid; grid-template-columns: 72px 1fr; gap: 8px; margin-bottom: 10px; }
+.info-rij dt { color: var(--grond-donker); }
+.info-rij dd { margin: 0; }
+.tip { background: var(--geel); border: 2px solid var(--inkt); padding: 8px; margin: 12px 0; }
+.kalender { display: grid; grid-template-columns: 56px repeat(12, 1fr); gap: 2px; margin: 8px 0 14px; font-size: 6px; align-items: center; }
+.kalender .m { text-align: center; }
+.kalender .blok { height: 14px; background: var(--wit); border: 1px solid var(--inkt); }
+.kalender .blok.zaai { background: var(--gras); }
+.kalender .blok.oogst { background: var(--oranje); }
+.kalender .m.nu { background: var(--geel); }
+.buren { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 12px; }
+.buur {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 6px 3px 3px;
+  font-size: 7px;
+  background: var(--wit);
+  border: 2px solid var(--inkt);
+}
+.buur img { width: 16px; height: 16px; }
+.buur.goed { background: #e9f8d8; }
+.buur.slecht { background: #ffd9d9; }
+.in-tuin { border-top: 3px dashed var(--inkt); padding-top: 10px; margin-top: 4px; }
+.blad .knop { font-size: 9px; }
+
+/* Maand-overzicht */
+.maand-groep { margin-bottom: 14px; }
+.maand-groep h3 { font-size: 9px; margin-bottom: 6px; }
+.leeg { font-size: 8px; opacity: 0.8; }
+
+/* Tuinmaat */
+.maat-rij { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+.stapper { display: flex; align-items: center; gap: 8px; }
+.stapper button {
+  width: 44px; height: 44px;
+  font: inherit; font-size: 14px;
+  background: var(--geel);
+  border: var(--rand) solid var(--inkt);
+  cursor: pointer;
+}
+.stapper output { min-width: 2.5em; text-align: center; font-size: 12px; }
+.knoppen-rij { display: grid; gap: 8px; margin-top: 12px; }
