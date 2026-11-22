@@ -5,7 +5,20 @@ import { plaatjeUrl, katPlaatje } from './spel-sprites.js';
 import { geluid } from './spel-geluid.js';
 
 // Muntjes per stuk groente of fruit
-export const PRIJZEN = { radijs: 1, wortel: 2, tomaat: 3, aardbei: 4, pompoen: 8 };
+const GROENTE_PRIJZEN = { radijs: 1, wortel: 2, tomaat: 3, aardbei: 4, pompoen: 8 };
+
+// De bakkerij: van een paar producten bak je een taart die meer oplevert dan de losse producten.
+export const RECEPTEN = {
+  wortelcake: { naam: 'Wortelcake', meer: 'wortelcakes', nodig: { wortel: 3 }, prijs: 12 },
+  tomatenquiche: { naam: 'Tomatenquiche', meer: 'tomatenquiches', nodig: { tomaat: 2, radijs: 2 }, prijs: 15 },
+  aardbeientaart: { naam: 'Aardbeientaart', meer: 'aardbeientaarten', nodig: { aardbei: 3 }, prijs: 20 },
+  pompoentaart: { naam: 'Pompoentaart', meer: 'pompoentaarten', nodig: { pompoen: 1, wortel: 2 }, prijs: 22 },
+};
+
+export const PRIJZEN = {
+  ...GROENTE_PRIJZEN,
+  ...Object.fromEntries(Object.entries(RECEPTEN).map(([k, r]) => [k, r.prijs])),
+};
 
 export const KATTEN = {
   cyperse: { naam: 'Dexter', tekst: 'Rode cyperse kat. Graaft graag naar schatten.' },
@@ -38,6 +51,22 @@ function verkoop(gewas) {
   return opbrengst;
 }
 
+function kanBakken(recept, v = voorraad()) {
+  return Object.entries(RECEPTEN[recept].nodig).every(([g, n]) => (v[g] ?? 0) >= n);
+}
+
+function bak(recept) {
+  const v = voorraad();
+  if (!kanBakken(recept, v)) return false;
+  for (const [g, n] of Object.entries(RECEPTEN[recept].nodig)) {
+    v[g] -= n;
+    if (!v[g]) delete v[g];
+  }
+  v[recept] = (v[recept] ?? 0) + 1;
+  bewaar('spel.voorraad', v);
+  return true;
+}
+
 function koopKat(soort) {
   const prijs = katPrijs();
   if (eigenKatten().includes(soort) || munten() < prijs) return false;
@@ -58,7 +87,8 @@ const img = (src, klasse = 'sprite') => Object.assign(document.createElement('im
  * Tekent de markt in het gegeven element.
  * `namen` geeft per gewas { naam, meer } voor de tekstjes.
  */
-export function toonMarkt(doel, namen) {
+export function toonMarkt(doel, gewasNamen) {
+  const namen = { ...gewasNamen, ...RECEPTEN };
   const v = voorraad();
   doel.replaceChildren();
 
@@ -67,9 +97,9 @@ export function toonMarkt(doel, namen) {
   doel.append(beurs);
 
   // --- groentekraam ---
-  doel.append(el('h3', '', 'Jouw oogst'));
+  doel.append(el('h3', '', 'Jouw kraam'));
   const lijst = el('ul', 'kraam');
-  const soorten = Object.keys(PRIJZEN).filter((g) => v[g] > 0);
+  const soorten = Object.keys(PRIJZEN).filter((g) => v[g] > 0); // groente en taarten
   if (!soorten.length) lijst.append(el('li', 'leeg', 'Nog niks te verkopen. Ga oogsten!'));
   for (const g of soorten) {
     const li = el('li');
@@ -80,7 +110,7 @@ export function toonMarkt(doel, namen) {
       verkoop(g);
       geluid.wakker();
       geluid.hartje();
-      toonMarkt(doel, namen);
+      toonMarkt(doel, gewasNamen);
     });
     li.append(img(plaatjeUrl(g)), el('span', 'wat', `${n} ${n === 1 ? namen[g].naam.toLowerCase() : namen[g].meer}`), knop);
     lijst.append(li);
@@ -92,10 +122,41 @@ export function toonMarkt(doel, namen) {
       for (const g of soorten) verkoop(g);
       geluid.wakker();
       geluid.level();
-      toonMarkt(doel, namen);
+      toonMarkt(doel, gewasNamen);
     });
     doel.append(alles);
   }
+
+  // --- bakkerij ---
+  doel.append(el('h3', '', 'Bakkerij'));
+  const bakkerij = el('ul', 'bakkerij');
+  for (const [recept, r] of Object.entries(RECEPTEN)) {
+    const li = el('li');
+    const wat = el('div', 'wat');
+    wat.append(el('strong', '', `${r.naam}`), el('small', '', `verkoop voor ${r.prijs} munten`));
+    // per ingrediënt: wat je hebt van wat je nodig hebt; rood als je nog iets mist
+    const nodig = el('div', 'nodig');
+    for (const [g, n] of Object.entries(r.nodig)) {
+      const heb = Math.min(v[g] ?? 0, n);
+      const stukje = el('span', heb >= n ? 'genoeg' : 'mist');
+      stukje.append(img(plaatjeUrl(g)), `${heb}/${n}`);
+      nodig.append(stukje);
+    }
+    wat.append(nodig);
+    const kan = kanBakken(recept, v);
+    const knop = el('button', `knop klein${kan ? ' groen' : ''}`, 'Bak');
+    knop.disabled = !kan;
+    knop.setAttribute('aria-label', `Bak een ${r.naam.toLowerCase()}`);
+    knop.addEventListener('click', () => {
+      if (!bak(recept)) return;
+      geluid.wakker();
+      geluid.level();
+      toonMarkt(doel, gewasNamen);
+    });
+    li.append(img(plaatjeUrl(recept)), wat, knop);
+    bakkerij.append(li);
+  }
+  doel.append(bakkerij);
 
   // --- katten ---
   doel.append(el('h3', '', 'Katten'));
@@ -119,7 +180,7 @@ export function toonMarkt(doel, namen) {
         if (!koopKat(soort)) return;
         geluid.wakker();
         geluid.miauw();
-        toonMarkt(doel, namen);
+        toonMarkt(doel, gewasNamen);
       });
       li.append(knop);
     }

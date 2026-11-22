@@ -69,6 +69,29 @@ const EIGEN = {
   glinsterKlein: ['.....', '..y..', '.ywy.', '..y..', '.....'],
 };
 
+// Taarten uit de bakkerij: één vorm met een rooster van korst (C) over de vulling (F).
+const TAART = [
+  '..........',
+  '..........',
+  '..kkkkkk..',
+  '.kCFCFCFk.',
+  'kFCFCFCFCk',
+  'kCFCFCFCFk',
+  'kaaaaaaaak',
+  'kaXaXaXaXk',
+  '.kkkkkkkk.',
+  '..........',
+];
+const TAART_KLEUR = {
+  aardbeientaart: { F: 'r', C: 'a' },
+  pompoentaart: { F: 'O', C: 'a' },
+  wortelcake: { F: 'o', C: 'w' },
+  tomatenquiche: { F: 'y', C: 'r' },
+};
+for (const [naam, { F, C }] of Object.entries(TAART_KLEUR)) {
+  EIGEN[naam] = TAART.map((rij) => rij.replace(/F/g, F).replace(/C/g, C));
+}
+
 function maak(raster, omzet) {
   const breedte = Math.max(...raster.map((r) => r.length));
   const c = document.createElement('canvas');

@@ -126,6 +126,17 @@ body.speelt #spel { bottom: env(safe-area-inset-bottom); }
 .katten strong { display: block; font-weight: normal; font-size: 12px; }
 .katten small { font-size: 9px; line-height: 1.5; opacity: 0.8; }
 .katten .knop img { width: 18px; height: 18px; }
+.bakkerij { list-style: none; padding: 0; margin: 0 0 12px; text-align: left; font-size: 10px; }
+.bakkerij li { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 2px dashed rgb(43 29 20 / 0.2); }
+.bakkerij > li > img { width: 40px; height: 40px; flex: none; }
+.bakkerij .wat { flex: 1; min-width: 0; }
+.bakkerij strong { display: block; font-weight: normal; font-size: 11px; }
+.bakkerij small { font-size: 9px; opacity: 0.8; }
+.nodig { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.nodig span { display: inline-flex; align-items: center; gap: 2px; }
+.nodig img { width: 20px; height: 20px; }
+.nodig .mist { color: var(--rood); }
+.nodig .genoeg { color: var(--gras-donker); }
 .knop:disabled { opacity: 0.5; cursor: default; }
 .knop:disabled:active { transform: none; box-shadow: var(--schaduw); }
 
