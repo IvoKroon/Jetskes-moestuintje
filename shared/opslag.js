@@ -1,6 +1,6 @@
 // Kleine laag om localStorage veilig te gebruiken.
 // Alle sleutels beginnen met 'jetske.' gevolgd door het onderdeel:
-//   jetske.spel.*      voor het tuinierspel
+//   jetske.spel.*      voor het spel Tuinieren
 //   jetske.moestuin.*  voor de moestuinplanner
 
 const PREFIX = 'jetske.';
