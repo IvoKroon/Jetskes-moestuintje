@@ -46,14 +46,13 @@ function render(root) {
   marktTekst.append(el('small', '', 'Verkoop je oogst voor munten'));
   markt.append(sprite('wortel', { grootte: 40 }), marktTekst);
 
-  // De bakkerij moet eerst in het spel gekocht worden; tot die tijd op slot
+  // De bakkerij moet eerst gekocht worden (op de markt- of bakkerijpagina); de kaart linkt altijd
   const bakkerijOpen = lees('spel.bakkerij', false) === true;
-  const bakkerij = el(bakkerijOpen ? 'a' : 'div', bakkerijOpen ? 'knop breed' : 'knop breed op-slot');
-  if (bakkerijOpen) bakkerij.href = './bakkerij/';
-  else bakkerij.setAttribute('aria-disabled', 'true');
-  const bakkerijTekst = el('span', '', bakkerijOpen ? 'Bakkerij' : 'Bakkerij (op slot)');
+  const bakkerij = el('a', 'knop breed');
+  bakkerij.href = './bakkerij/';
+  const bakkerijTekst = el('span', '', 'Bakkerij');
   bakkerijTekst.append(
-    el('small', '', bakkerijOpen ? 'Bak lekkers van je oogst' : 'Koop hem in het spel voor 50 munten'),
+    el('small', '', bakkerijOpen ? 'Bak lekkers van je oogst' : 'Op slot: koop hem voor 50 munten'),
   );
   bakkerij.append(sprite('brood', { grootte: 40 }), bakkerijTekst);
 

@@ -111,8 +111,6 @@ p { margin: 0 0 12px; }
 .begroeting .afzender { text-align: right; margin: 0; }
 .keuzes { display: grid; gap: 16px; margin-bottom: 24px; }
 .keuzes .knop { justify-content: flex-start; padding: 16px; font-size: 13px; }
-.keuzes .op-slot { background: var(--papier); opacity: 0.6; cursor: default; box-shadow: none; }
-.keuzes .op-slot:active { transform: none; }
 .keuzes small { display: block; font-size: 9px; margin-top: 6px; }
 .weetjes { font-size: 10px; }
 .weetjes[hidden] { display: none; }
