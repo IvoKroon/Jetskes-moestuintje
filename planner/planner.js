@@ -690,7 +690,7 @@ document.getElementById('sel-beplant').addEventListener('click', () => {
 const blad = document.getElementById('blad');
 const bladAchter = document.getElementById('blad-achtergrond');
 let vorigeFocus = null;
-function openBlad(titel, inhoud, icoon) {
+function openBlad(titel, inhoud, icoon, hoog = false) {
   vorigeFocus = document.activeElement;
   const kop = document.getElementById('blad-titel');
   kop.replaceChildren();
@@ -699,6 +699,7 @@ function openBlad(titel, inhoud, icoon) {
   const doel = document.getElementById('blad-inhoud');
   doel.replaceChildren(...[].concat(inhoud));
   doel.scrollTop = 0;
+  blad.classList.toggle('hoog', hoog);
   blad.hidden = false;
   bladAchter.hidden = false;
   document.getElementById('blad-sluit').focus({ preventScroll: true });
@@ -731,25 +732,33 @@ let plantFilter = 'alles';
 function openCatalogus(tab = catalogusTab, opKeuze = null, titel = 'Toevoegen aan je tuin') {
   const alleenPlanten = !!opKeuze;
   catalogusTab = alleenPlanten ? 'planten' : tab;
-  const tabs = el('div', 'tabs');
+  const kop = el('div', 'catalogus-kop');
+  const segmenten = el('div', 'segmenten');
+  const filters = el('div', 'filters');
   const raster = el('div', 'catalogus');
   const uitleg = el('p', 'uitleg');
 
   const vul = () => {
-    tabs.replaceChildren();
-    const opties = alleenPlanten ? [] : [['inrichting', 'Bakken & paden']];
-    opties.push(['alles', 'Alle planten'], ['groente', 'Groente'], ['fruit', 'Fruit'], ['kruid', 'Kruiden & bloemen'], ['nu', 'Nu zaaien']);
-    opties.forEach(([f, label]) => {
-      const b = el('button', 'tab', label);
-      b.type = 'button';
-      const actief = f === 'inrichting' ? catalogusTab === 'inrichting' : catalogusTab === 'planten' && plantFilter === f;
-      b.setAttribute('aria-pressed', String(actief));
-      b.addEventListener('click', () => {
-        if (f === 'inrichting') catalogusTab = 'inrichting';
-        else { catalogusTab = 'planten'; plantFilter = f; }
-        vul();
+    segmenten.replaceChildren();
+    if (!alleenPlanten) {
+      [['inrichting', 'Tuinonderdelen'], ['planten', 'Planten']].forEach(([t, label]) => {
+        const b = el('button', 'segment', label);
+        b.type = 'button';
+        b.setAttribute('aria-pressed', String(catalogusTab === t));
+        b.addEventListener('click', () => { catalogusTab = t; vul(); });
+        segmenten.append(b);
       });
-      tabs.append(b);
+    }
+    segmenten.hidden = alleenPlanten;
+
+    filters.replaceChildren();
+    filters.hidden = catalogusTab !== 'planten';
+    [['alles', 'Alles'], ['groente', 'Groente'], ['fruit', 'Fruit'], ['kruid', 'Kruiden'], ['nu', 'Nu zaaien']].forEach(([f, label]) => {
+      const b = el('button', 'filter', label);
+      b.type = 'button';
+      b.setAttribute('aria-pressed', String(plantFilter === f));
+      b.addEventListener('click', () => { plantFilter = f; vul(); });
+      filters.append(b);
     });
 
     raster.replaceChildren();
@@ -782,11 +791,12 @@ function openCatalogus(tab = catalogusTab, opKeuze = null, titel = 'Toevoegen aa
         raster.append(b);
       });
       if (!raster.children.length) raster.append(el('p', 'leeg', 'Deze maand valt er niets te zaaien.'));
-      uitleg.textContent = `Groen = kun je in ${MAAND_LANG[DEZE_MAAND - 1]} zaaien of planten.`;
+      uitleg.textContent = `Groen vlak = kun je in ${MAAND_LANG[DEZE_MAAND - 1]} zaaien of planten.`;
     }
   };
   vul();
-  openBlad(titel, [tabs, raster, uitleg]);
+  kop.append(segmenten, filters);
+  openBlad(titel, [kop, raster, uitleg], null, true);
 }
 document.getElementById('toevoegen').addEventListener('click', () => openCatalogus('inrichting'));
 
