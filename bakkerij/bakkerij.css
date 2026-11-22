@@ -2,33 +2,115 @@
    Kleuren en knoppen komen uit shared/style.css. */
 
 body { background: var(--gras-donker); }
-#app .kader { text-align: center; }
-h1 { display: flex; align-items: center; justify-content: center; gap: 12px; color: var(--gras-donker); }
-h1 img { width: 40px; height: 40px; }
+body.vast { overflow: hidden; }
+[hidden] { display: none !important; }
+
+#app > * + * { margin-top: 16px; }
+.klein { font-size: 9px; line-height: 1.7; margin: 0; }
+h2 { font-size: 12px; margin-bottom: 10px; }
+.tussenkop { color: var(--papier); text-shadow: 2px 2px 0 var(--inkt); margin: 20px 0 0; }
+
 .knop img { width: 24px; height: 24px; }
-.knop + .knop { margin-top: 12px; }
-.knop:disabled { opacity: 0.5; cursor: default; }
+.knop:disabled { opacity: 0.55; cursor: default; }
 .knop:disabled:active { transform: none; box-shadow: var(--schaduw); }
 
-.beurs { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 14px; margin-bottom: 12px; }
+/* Kop met munten */
+.kop { text-align: center; }
+.kop h1 { display: flex; align-items: center; justify-content: center; gap: 12px; color: var(--gras-donker); margin-bottom: 8px; }
+.oven-kop { width: 48px; height: 45px; }
+.beurs { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 14px; margin: 0; }
 .beurs img { width: 28px; height: 28px; }
-.uitleg { font-size: 10px; line-height: 1.6; text-align: left; }
 
-.recepten { list-style: none; padding: 0; margin: 0 0 16px; text-align: left; font-size: 10px; }
-.recepten li { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 2px dashed rgb(43 29 20 / 0.2); }
-.recepten > li > img { width: 40px; height: 40px; flex: none; }
-.recepten .wat { flex: 1; min-width: 0; }
-.recepten strong { display: block; font-weight: normal; font-size: 11px; }
-.recepten small { display: block; font-size: 9px; opacity: 0.8; }
-.recepten .knop { min-height: 40px; min-width: 56px; padding: 8px 10px; font-size: 12px; }
-.recepten .knop small { font-size: 8px; opacity: 1; margin-left: 4px; }
+/* Voortgangsbalkje (sparen voor de bakkerij, en in de oven) */
+.balk { height: 16px; border: var(--rand) solid var(--inkt); background: var(--wit); margin: 0 0 16px; }
+.balk > div { height: 100%; width: 0; background: var(--geel); }
 
-.nodig { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
-.nodig span { display: inline-flex; align-items: center; gap: 2px; }
-.nodig img { width: 20px; height: 20px; }
-.nodig .mist { color: var(--rood); }
-.nodig .genoeg { color: var(--gras-donker); }
-.dicht p { font-size: 10px; line-height: 1.6; }
-.dicht .slot { width: 48px; height: 48px; margin-bottom: 8px; }
-.dicht .knop { margin-bottom: 16px; }
-[hidden] { display: none !important; }
+/* Dicht */
+.dicht { text-align: center; }
+.dicht p { font-size: 10px; line-height: 1.7; }
+.dicht .slot { width: 56px; height: 72px; margin-bottom: 8px; }
+
+/* Je oogst */
+.oogst { list-style: none; display: flex; justify-content: space-between; gap: 4px; padding: 0; margin: 0; }
+.oogst li { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 11px; }
+.oogst img { width: 36px; height: 36px; }
+.oogst .leeg { opacity: 0.35; }
+
+/* Recepten: een kaartje per taart */
+.recepten { list-style: none; padding: 0; margin: 10px 0 0; display: grid; gap: 16px; }
+.recept.kan { background: #f0ffd8; }
+.recept-kop { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.recept-plaatje { position: relative; flex: none; }
+.recept-plaatje img { width: 64px; height: 64px; display: block; }
+.stapel {
+  position: absolute; right: -8px; top: -8px;
+  min-width: 26px; padding: 4px; text-align: center;
+  font-size: 9px; background: var(--geel); border: 3px solid var(--inkt);
+}
+.recept-naam strong { display: block; font-weight: normal; font-size: 12px; margin-bottom: 4px; }
+.recept-naam small { display: block; font-size: 9px; line-height: 1.6; }
+.recept-naam .winst { opacity: 0.6; }
+
+.nodig { list-style: none; padding: 0; margin: 0 0 8px; display: grid; gap: 6px; font-size: 10px; }
+.nodig li { display: flex; align-items: center; gap: 8px; padding: 4px 8px; border: 3px solid var(--inkt); background: var(--wit); }
+.nodig img { width: 28px; height: 28px; flex: none; }
+.nodig .wat { flex: 1; }
+.nodig .heb { flex: none; }
+.nodig .genoeg .heb { color: var(--gras-donker); }
+.nodig .mist { background: #ffe3e3; }
+.nodig .mist .heb { color: var(--rood); }
+
+.status { font-size: 9px; margin: 0 0 12px; color: var(--gras-donker); }
+.status.mist { color: var(--rood); }
+
+/* Klaar voor de markt */
+.plank { background: #ffe9c2; }
+.taarten { list-style: none; padding: 0; margin: 0 0 10px; display: flex; flex-wrap: wrap; gap: 12px; }
+.taarten li { display: flex; align-items: center; gap: 4px; font-size: 11px; }
+.taarten img { width: 40px; height: 40px; }
+
+.onder { display: grid; gap: 12px; margin-top: 20px; }
+
+/* Het bakscherm */
+.bakken {
+  position: fixed; inset: 0; z-index: 20;
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px; background: rgb(43 29 20 / 0.7);
+}
+.bak-kader { width: 100%; max-width: 360px; text-align: center; }
+.bak-titel { font-size: 13px; margin-bottom: 8px; }
+.bak-plek { position: relative; height: 240px; display: flex; align-items: flex-end; justify-content: center; margin-bottom: 12px; }
+.bak-oven { width: 160px; height: 150px; }
+.bak-taart { position: absolute; left: 50%; top: 0; width: 80px; height: 80px; margin-left: -40px; }
+.vliegers, .glinsters { position: absolute; inset: 0; pointer-events: none; }
+.vlieger { position: absolute; left: 50%; top: 0; width: 32px; height: 32px; margin-left: -16px; opacity: 0; }
+.glinster { position: absolute; left: 50%; top: 40px; width: 20px; height: 20px; margin: -10px; }
+.bak-knoppen { display: grid; gap: 12px; margin-top: 12px; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .vlieger { animation: erin 520ms steps(6) calc(var(--i) * 160ms) forwards; }
+  @keyframes erin {
+    0% { opacity: 1; transform: translate(var(--x), 0) scale(1); }
+    60% { opacity: 1; transform: translate(calc(var(--x) / 3), 40px) scale(1.1); }
+    100% { opacity: 0; transform: translate(0, 120px) scale(0.4); }
+  }
+  .gloei { animation: gloei 300ms steps(2) infinite; }
+  @keyframes gloei { 50% { filter: brightness(1.25); transform: translateY(-2px); } }
+  .bak-taart:not([hidden]) { animation: pop 500ms steps(5); }
+  @keyframes pop {
+    0% { transform: translateY(90px) scale(0.3); }
+    60% { transform: translateY(-12px) scale(1.15); }
+    100% { transform: none; }
+  }
+  .glinster { animation: spat 700ms steps(6) forwards; }
+  @keyframes spat {
+    0% { transform: rotate(var(--hoek)) translateY(0); opacity: 1; }
+    100% { transform: rotate(var(--hoek)) translateY(-70px); opacity: 0; }
+  }
+  .recept.kan .knop { animation: wip 1.4s steps(2) infinite; }
+  @keyframes wip { 50% { transform: translateY(-2px); } }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vlieger { display: none; }
+  .glinster { display: none; }
+}
