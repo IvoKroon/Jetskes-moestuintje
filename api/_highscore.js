@@ -1,73 +1,68 @@
 // Logica voor de online highscore. Bestanden die met _ beginnen maakt Vercel niet tot een eigen endpoint.
-// Opslag: Upstash Redis (via de Vercel Marketplace), aangesproken met de gewone REST API, dus zonder extra pakketten.
+// Opslag: één bestand highscore/scores.json in Vercel Blob (privé). Gelijktijdige inzendingen gaan goed
+// doordat we alleen schrijven als het bestand sinds het lezen niet veranderd is (ETag), anders opnieuw.
+import { createHash } from 'node:crypto';
+import { get, put, BlobPreconditionFailedError } from '@vercel/blob';
 
-export const LIJST = 'moestuinrush:scores';
 export const TOP = 10;
-const BEWAAR_MAX = 200; // zoveel scores houden we, de rest valt eraf
 export const NAAM_MAX = 12;
+const BESTAND = 'highscore/scores.json';
+const BEWAAR_MAX = 200; // zoveel scores houden we, de rest valt eraf
 const MAX_PER_KWARTIER = 10; // inzendingen per IP-adres per 15 minuten
+const KWARTIER = 15 * 60 * 1000;
 const MAX_PUNTEN_PER_SECONDE = 100; // ruim boven wat je echt kunt halen
 const MAX_SCORE = 500000;
+const POGINGEN = 6;
 
-// Redis via REST. In productie Upstash, lokaal (npm run dev) een nep-versie in het geheugen.
-export function upstash(env = process.env) {
-  const url = env.KV_REST_API_URL || env.UPSTASH_REDIS_REST_URL;
-  const token = env.KV_REST_API_TOKEN || env.UPSTASH_REDIS_REST_TOKEN;
-  if (!url || !token) return null;
-  return async (opdrachten) => {
-    const res = await fetch(`${url}/pipeline`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(opdrachten),
-    });
-    if (!res.ok) throw new Error(`Upstash ${res.status}`);
-    const uit = await res.json();
-    for (const r of uit) if (r.error) throw new Error(r.error);
-    return uit.map((r) => r.result);
+export class Botsing extends Error {}
+
+// ---------- Opslag ----------
+// Een opslag heeft lees() -> { data, etag } | null en schrijf(data, etag) (gooit Botsing als iemand anders eerder was).
+
+export function blobOpslag(env = process.env) {
+  if (!env.BLOB_READ_WRITE_TOKEN && !env.BLOB_STORE_ID) return null;
+  return {
+    async lees() {
+      const res = await get(BESTAND, { access: 'private', useCache: false });
+      if (!res || res.statusCode !== 200) return null;
+      const data = await new Response(res.stream).json();
+      return { data, etag: res.blob.etag };
+    },
+    async schrijf(data, etag) {
+      try {
+        await put(BESTAND, JSON.stringify(data), {
+          access: 'private',
+          contentType: 'application/json',
+          addRandomSuffix: false,
+          cacheControlMaxAge: 60,
+          ...(etag ? { allowOverwrite: true, ifMatch: etag } : { allowOverwrite: false }),
+        });
+      } catch (e) {
+        // ETag klopt niet meer, of het bestand is net door een ander aangemaakt
+        if (e instanceof BlobPreconditionFailedError || /already exists|precondition/i.test(e?.message ?? '')) throw new Botsing();
+        throw e;
+      }
+    },
   };
 }
 
-// Kleine nep-Redis voor lokaal testen. Kent alleen de opdrachten die we gebruiken.
-export function geheugenRedis() {
-  const zsets = new Map();
-  const tellers = new Map();
-  const sorteer = (z) => [...z.entries()].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1));
-  const een = ([cmd, ...a]) => {
-    switch (cmd) {
-      case 'ZADD': {
-        const z = zsets.get(a[0]) ?? new Map();
-        zsets.set(a[0], z);
-        z.set(a[2], Number(a[1]));
-        return 1;
-      }
-      case 'ZRANGE': {
-        // alleen: ZRANGE key start stop REV WITHSCORES
-        const lijst = sorteer(zsets.get(a[0]) ?? new Map()).slice(Number(a[1]), Number(a[2]) + 1);
-        return lijst.flatMap(([m, s]) => [m, String(s)]);
-      }
-      case 'ZREMRANGEBYRANK': {
-        const z = zsets.get(a[0]);
-        if (!z) return 0;
-        // laagste eerst; we gebruiken alleen 0 .. -(n+1)
-        const oplopend = sorteer(z).reverse();
-        const weg = oplopend.slice(0, Math.max(0, oplopend.length + Number(a[2]) + 1));
-        weg.forEach(([m]) => z.delete(m));
-        return weg.length;
-      }
-      case 'INCR': {
-        const n = (tellers.get(a[0]) ?? 0) + 1;
-        tellers.set(a[0], n);
-        return n;
-      }
-      case 'SET':
-        if (!tellers.has(a[0])) tellers.set(a[0], Number(a[1]));
-        return 'OK';
-      default:
-        throw new Error(`Onbekende opdracht ${cmd}`);
-    }
+// Opslag in het geheugen, voor lokaal (npm run dev) en de tests.
+export function geheugenOpslag() {
+  let bestand = null;
+  let versie = 0;
+  return {
+    async lees() {
+      return bestand && { data: JSON.parse(bestand), etag: String(versie) };
+    },
+    async schrijf(data, etag) {
+      if ((etag ?? null) !== (bestand ? String(versie) : null)) throw new Botsing();
+      bestand = JSON.stringify(data);
+      versie++;
+    },
   };
-  return async (opdrachten) => opdrachten.map(een);
 }
+
+// ---------- Controles ----------
 
 // Naam opschonen: spaties samenvoegen, rare tekens eruit, maximaal NAAM_MAX tekens.
 export function schoneNaam(invoer) {
@@ -93,44 +88,57 @@ export function controleer(body) {
   return { naam, score };
 }
 
-function leesTop(platte) {
-  const top = [];
-  for (let i = 0; i < platte.length; i += 2) {
-    try {
-      const { n, d } = JSON.parse(platte[i]);
-      top.push({ naam: n, score: Number(platte[i + 1]), datum: d });
-    } catch {
-      // kapotte regel overslaan
-    }
-  }
-  return top;
-}
+// IP-adressen bewaren we niet zelf, alleen een stukje van een hash, voor de limiet.
+const ipCode = (ip) => createHash('sha256').update(`moestuinrush:${ip}`).digest('hex').slice(0, 16);
 
-export async function haalTop(redis) {
-  const [platte] = await redis([['ZRANGE', LIJST, '0', String(TOP - 1), 'REV', 'WITHSCORES']]);
-  return leesTop(platte);
+const top = (data) => (data?.scores ?? []).slice(0, TOP).map(({ n, s, d }) => ({ naam: n, score: s, datum: d }));
+
+// ---------- Acties ----------
+
+export async function haalTop(opslag) {
+  const huidig = await opslag.lees();
+  return top(huidig?.data);
 }
 
 // Slaat een score op. Geeft { top, plek } terug (plek is 1..TOP of null), of { fout, status }.
-export async function slaOp(redis, body, ip = 'onbekend') {
-  const sleutel = `moestuinrush:limiet:${ip}`;
-  // SET ... NX zet de teller (met verlooptijd) alleen als hij nog niet bestaat; INCR houdt die verlooptijd
-  const [, aantal] = await redis([['SET', sleutel, '0', 'EX', '900', 'NX'], ['INCR', sleutel]]);
-  if (aantal > MAX_PER_KWARTIER) return { fout: 'Even rustig aan, probeer het straks nog eens', status: 429 };
-
+export async function slaOp(opslag, body, ip = 'onbekend', nu = Date.now()) {
   const ok = controleer(body);
   if (ok.fout) return { fout: ok.fout, status: 400 };
+  const code = ipCode(ip);
 
-  const id = Math.random().toString(36).slice(2, 8);
-  const datum = new Date().toISOString().slice(0, 10);
-  const lid = JSON.stringify({ n: ok.naam, d: datum, id });
-  const [, , platte] = await redis([
-    ['ZADD', LIJST, String(ok.score), lid],
-    ['ZREMRANGEBYRANK', LIJST, '0', String(-(BEWAAR_MAX + 1))],
-    ['ZRANGE', LIJST, '0', String(TOP - 1), 'REV', 'WITHSCORES'],
-  ]);
-  const plek = platte.findIndex((m, i) => i % 2 === 0 && m === lid);
-  return { top: leesTop(platte), plek: plek === -1 ? null : plek / 2 + 1 };
+  for (let poging = 0; poging < POGINGEN; poging++) {
+    const huidig = await opslag.lees();
+    const data = structuredClone(huidig?.data ?? { scores: [], limiet: {} });
+    data.scores ??= [];
+    data.limiet ??= {};
+
+    // Limiet per IP: oude tijdstippen weggooien, dan tellen
+    for (const [k, tijden] of Object.entries(data.limiet)) {
+      const vers = tijden.filter((t) => nu - t < KWARTIER);
+      if (vers.length) data.limiet[k] = vers;
+      else delete data.limiet[k];
+    }
+    const mijn = data.limiet[code] ?? [];
+    if (mijn.length >= MAX_PER_KWARTIER) return { fout: 'Even rustig aan, probeer het straks nog eens', status: 429 };
+    data.limiet[code] = [...mijn, nu];
+
+    const id = Math.random().toString(36).slice(2, 8);
+    data.scores.push({ n: ok.naam, s: ok.score, d: new Date(nu).toISOString().slice(0, 10), id });
+    data.scores.sort((a, b) => b.s - a.s);
+    data.scores = data.scores.slice(0, BEWAAR_MAX);
+
+    try {
+      await opslag.schrijf(data, huidig?.etag ?? null);
+    } catch (e) {
+      if (!(e instanceof Botsing)) throw e;
+      // Iemand anders schreef net tegelijk: even wachten en opnieuw met de nieuwste versie
+      await new Promise((r) => setTimeout(r, 50 + Math.random() * 150 * (poging + 1)));
+      continue;
+    }
+    const plek = data.scores.findIndex((s) => s.id === id);
+    return { top: top(data), plek: plek >= 0 && plek < TOP ? plek + 1 : null };
+  }
+  return { fout: 'Het is even heel druk, probeer het nog eens', status: 503 };
 }
 
 const json = (data, status = 200) =>
@@ -140,10 +148,10 @@ const json = (data, status = 200) =>
   });
 
 // Eén handler voor GET (top 10 ophalen) en POST (score insturen).
-export async function behandel(request, redis) {
-  if (!redis) return json({ fout: 'De online highscore is nog niet ingesteld' }, 503);
+export async function behandel(request, opslag) {
+  if (!opslag) return json({ fout: 'De online highscore is nog niet ingesteld' }, 503);
   try {
-    if (request.method === 'GET') return json({ top: await haalTop(redis) });
+    if (request.method === 'GET') return json({ top: await haalTop(opslag) });
     if (request.method === 'POST') {
       const tekst = await request.text();
       if (tekst.length > 500) return json({ fout: 'Te groot' }, 413);
@@ -154,7 +162,7 @@ export async function behandel(request, redis) {
         return json({ fout: 'Ongeldige invoer' }, 400);
       }
       const ip = (request.headers.get('x-forwarded-for') || '').split(',')[0].trim() || 'onbekend';
-      const uit = await slaOp(redis, body, ip);
+      const uit = await slaOp(opslag, body, ip);
       return uit.fout ? json({ fout: uit.fout }, uit.status) : json(uit);
     }
     return json({ fout: 'Methode niet toegestaan' }, 405);

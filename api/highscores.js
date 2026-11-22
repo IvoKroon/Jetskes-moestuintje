@@ -1,12 +1,12 @@
 // Vercel-functie: /api/highscores
 //   GET  -> { top: [{ naam, score, datum }] }
 //   POST { naam, score, tijd } -> { top, plek }
-import { behandel, upstash } from './_highscore.js';
+import { behandel, blobOpslag } from './_highscore.js';
 
 export function GET(request) {
-  return behandel(request, upstash());
+  return behandel(request, blobOpslag());
 }
 
 export function POST(request) {
-  return behandel(request, upstash());
+  return behandel(request, blobOpslag());
 }
