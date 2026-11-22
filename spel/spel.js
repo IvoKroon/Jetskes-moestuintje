@@ -30,9 +30,11 @@ const BEESTJES = {
 };
 
 // Zaaien en oogsten gaan vanzelf; de speler geeft water en jaagt beestjes weg.
-const DORST_TIJD = 5; // zo lang kan een plantje zonder water
+const DORST_TIJD = 6; // zo lang kan een plantje zonder water
 const SNEL_WATER = 1; // binnen zoveel seconden water geven = extra punten
-const ZAAI_PAUZE = 0.8; // zo lang blijft een vakje leeg voordat er vanzelf gezaaid wordt
+// zo lang blijft een vakje leeg voordat er vanzelf gezaaid wordt: rustig in level 1, daarna sneller
+const zaaiPauze = (level) => Math.max(0.8, 3 - 0.6 * (level - 1));
+const START_TUSSEN = 2.5; // aan het begin komt er om de zoveel seconden een plantje bij
 const RIJP_TOON = 0.6; // zo lang zie je de rijpe groente voordat hij geoogst wordt
 
 const LEVEL_DUUR = 25; // seconden per level
@@ -65,6 +67,8 @@ let S = null;
 let toestand = 'start'; // start | spelen | pauze | einde
 
 function nieuwSpel() {
+  // in willekeurige volgorde, één voor één een plantje erbij
+  const volgorde = [...Array(KOLOMMEN * RIJEN).keys()].sort(() => Math.random() - 0.5);
   S = {
     vakken: Array.from({ length: KOLOMMEN * RIJEN }, (_, i) => ({
       i,
@@ -72,10 +76,11 @@ function nieuwSpel() {
       y: MARGE + Math.floor(i / KOLOMMEN) * (VAK + TUSSEN),
       fase: 'leeg', // leeg | groeit | rijp | rot | opgegeten
       gewas: null,
-      t: -0.25 * i, // aan het begin één voor één zaaien
+      t: 0,
       groei: 0,
       rijp: 0,
       wiebel: 0,
+      wacht: volgorde.indexOf(i) * START_TUSSEN - zaaiPauze(1) + 0.5, // extra wachttijd voor het eerste zaadje
       dorsten: [], // op welke momenten van de groei hij dorst krijgt (0..1)
       perfect: true, // steeds snel water gehad
       dorstig: false,
@@ -110,7 +115,7 @@ const moeilijk = () => {
     maxBeestjes: Math.min(1 + Math.floor((l + 1) / 2), 6),
     snel: 1 + 0.06 * l,
     eet: Math.max(0.55, 1 - 0.05 * l),
-    dorstTijd: Math.max(3, DORST_TIJD - 0.25 * l),
+    dorstTijd: Math.max(3, DORST_TIJD - 0.4 * l),
   };
 };
 
@@ -394,7 +399,10 @@ function werkBij(dt) {
       Object.assign(v, { dorstig: true, dorstT: 0 });
     } else if (v.fase === 'groeit' && v.t >= v.groei) Object.assign(v, { fase: 'rijp', t: 0 });
     else if (v.fase === 'rijp' && v.t >= RIJP_TOON) oogst(v);
-    else if (v.fase === 'leeg' && v.t >= ZAAI_PAUZE) zaai(v);
+    else if (v.fase === 'leeg' && v.t >= zaaiPauze(S.level) + v.wacht) {
+      v.wacht = 0;
+      zaai(v);
+    }
     else if (v.fase === 'rot' && v.t >= 3) Object.assign(v, { fase: 'leeg', gewas: null, t: 0 });
     else if (v.fase === 'opgegeten' && v.t >= 1.2) Object.assign(v, { fase: 'leeg', t: 0 });
   }
