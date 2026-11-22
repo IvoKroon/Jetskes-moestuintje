@@ -53,6 +53,7 @@ const EIGEN = {
     '.krrkkrrk.',
     '..kkkkkk..',
   ],
+  druppel: ['..k..', '.kuk.', 'kuulk', 'kuuuk', '.kkk.'],
   glinster: ['..y..', '.yyy.', 'yywyy', '.yyy.', '..y..'],
   glinsterKlein: ['.....', '..y..', '.ywy.', '..y..', '.....'],
 };

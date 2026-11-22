@@ -44,6 +44,7 @@ export const geluid = {
   },
   tik: () => toon(300, 0.05, { type: 'triangle', vol: 0.08 }),
   weg: () => toon(180, 0.12, { type: 'sawtooth', naar: 60, vol: 0.05 }),
+  water: () => reeks([880, 660, 990], 0.04, { type: 'triangle', vol: 0.06 }),
   opruimen: () => toon(140, 0.08, { type: 'triangle', naar: 90, vol: 0.08 }),
   nee: () => toon(110, 0.05, { type: 'triangle', vol: 0.06 }),
   au: () => toon(330, 0.35, { type: 'triangle', naar: 90, vol: 0.12 }),
