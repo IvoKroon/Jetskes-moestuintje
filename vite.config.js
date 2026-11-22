@@ -5,7 +5,7 @@ import { behandel, blobOpslag, geheugenOpslag } from './api/_highscore.js';
 
 // Multi-page site: homepage in de root, het spel in spel/, de moestuinplanner in planner/.
 // Een pagina wordt alleen meegebouwd als zijn index.html bestaat.
-const paginas = { home: 'index.html', spel: 'spel/index.html', planner: 'planner/index.html', bakkerij: 'bakkerij/index.html' };
+const paginas = { home: 'index.html', spel: 'spel/index.html', planner: 'planner/index.html', bakkerij: 'bakkerij/index.html', markt: 'markt/index.html' };
 const input = Object.fromEntries(
   Object.entries(paginas)
     .filter(([, pad]) => existsSync(resolve(import.meta.dirname, pad)))
