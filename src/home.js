@@ -39,7 +39,24 @@ function render(root) {
   const tuinTekst = el('span', '', 'Plan je moestuintje');
   tuinTekst.append(el('small', '', 'Teken je tuin en houd bij wat je doet'));
   tuin.append(sprite('kiemplant', { grootte: 40 }), tuinTekst);
-  keuzes.append(spel, tuin);
+
+  const markt = el('a', 'knop oranje breed');
+  markt.href = './markt/';
+  const marktTekst = el('span', '', 'Markt');
+  marktTekst.append(el('small', '', 'Verkoop je oogst voor munten'));
+  markt.append(sprite('wortel', { grootte: 40 }), marktTekst);
+
+  // De bakkerij moet eerst gekocht worden (op de markt- of bakkerijpagina); de kaart linkt altijd
+  const bakkerijOpen = lees('spel.bakkerij', false) === true;
+  const bakkerij = el('a', 'knop breed');
+  bakkerij.href = './bakkerij/';
+  const bakkerijTekst = el('span', '', 'Bakkerij');
+  bakkerijTekst.append(
+    el('small', '', bakkerijOpen ? 'Bak lekkers van je oogst' : 'Op slot: koop hem voor 50 munten'),
+  );
+  bakkerij.append(sprite('brood', { grootte: 40 }), bakkerijTekst);
+
+  keuzes.append(spel, tuin, markt, bakkerij);
 
   // Laatste actie uit de moestuinplanner, alleen als die er is
   const weetjes = el('section', 'kader weetjes');

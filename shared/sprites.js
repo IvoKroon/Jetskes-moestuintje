@@ -150,6 +150,18 @@ export const SPRITES = {
     '....y.....',
     '..........',
   ],
+  brood: [
+    '..........',
+    '...kkkkk..',
+    '..kyoooyk.',
+    '.kooyoyook',
+    'kboooooobk',
+    'kbyoyoyobk',
+    'kbbbbbbbbk',
+    '.kBBBBBBk.',
+    '..kkkkkk..',
+    '..........',
+  ],
   gieter: [
     '..........',
     '...kkkk...',
