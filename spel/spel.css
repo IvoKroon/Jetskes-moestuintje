@@ -111,12 +111,6 @@ body.speelt #spel { bottom: env(safe-area-inset-bottom); }
 
 .eindscore { font-size: 32px; margin: 4px 0 12px; color: var(--oranje); text-shadow: 3px 3px 0 var(--inkt); }
 
-/* Knoppen naar de markt en de bakkerij (eigen pagina's) */
-.naar-markt img, .naar-bakkerij img { width: 24px; height: 24px; }
-.knoppen-rij { display: flex; gap: 12px; margin-top: 12px; }
-.knoppen-rij .knop { flex: 1; min-width: 0; padding-left: 8px; padding-right: 8px; }
-.knoppen-rij .knop + .knop { margin-top: 0; }
-
 .records { margin-top: 16px; font-size: 10px; }
 .records h3 { font-size: 11px; margin-bottom: 8px; }
 .records ol { margin: 0; padding: 0 0 0 28px; text-align: left; }
