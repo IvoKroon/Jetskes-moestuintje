@@ -30,14 +30,14 @@ const BEESTJES = {
 };
 
 // Zaaien en oogsten gaan vanzelf; de speler geeft water en jaagt beestjes weg.
-const DORST_TIJD = 6; // zo lang kan een plantje zonder water
+const DORST_TIJD = 8; // zo lang kan een plantje zonder water
 const SNEL_WATER = 1; // binnen zoveel seconden water geven = extra punten
 // zo lang blijft een vakje leeg voordat er vanzelf gezaaid wordt: rustig in level 1, daarna sneller
 const zaaiPauze = (level) => Math.max(1, 4 - 0.6 * (level - 1));
 const START_TUSSEN = 4; // aan het begin komt er om de zoveel seconden een plantje bij
 const VERS_TIJD = 1; // binnen zoveel seconden na rijp oogsten = vers, extra punten
 
-const LEVEL_DUUR = 30; // seconden per level
+const LEVEL_DUUR = 45; // seconden per level
 const COMBO_TIJD = 1.2;
 const MAX_COMBO = 5; // x1, x1.5 ... x3
 const MAX_HARTJES = 5;
@@ -91,14 +91,14 @@ function nieuwSpel() {
     deeltjes: [],
     zwevers: [],
     score: 0,
-    hartjes: 3,
+    hartjes: 5,
     volgendHartje: HARTJE_PER,
     level: 1,
     tijd: 0,
     combo: 0,
     laatsteWater: -9,
-    beestjeKlok: 15,
-    lieveKlok: 20,
+    beestjeKlok: 25,
+    lieveKlok: 15,
     open: new Set(Object.keys(GEWASSEN).filter((g) => GEWASSEN[g].vanaf === 0)),
     geoogst: {},
     weggejaagd: 0,
@@ -110,13 +110,14 @@ const moeilijk = () => {
   const l = S.level - 1;
   return {
     // level 1 is extra rustig: alles groeit langzamer en blijft langer rijp
-    groei: Math.max(0.55, 1.5 - 0.12 * l),
-    rijp: Math.max(0.5, 1.4 - 0.1 * l),
-    beestjeTussen: Math.max(1.4, 5.5 - 0.5 * l),
-    maxBeestjes: Math.min(1 + Math.floor((l + 1) / 2), 6),
-    snel: 1 + 0.06 * l,
-    eet: Math.max(0.55, 1 - 0.05 * l),
-    dorstTijd: Math.max(3, DORST_TIJD - 0.4 * l),
+    // en daarna wordt het per level maar een klein beetje moeilijker
+    groei: Math.max(0.6, 1.5 - 0.08 * l),
+    rijp: Math.max(0.6, 1.7 - 0.1 * l),
+    beestjeTussen: Math.max(2, 10 - 0.8 * l),
+    maxBeestjes: Math.min(1 + Math.floor(l / 2), 5),
+    snel: 1 + 0.04 * l,
+    eet: Math.max(0.6, 1.4 - 0.07 * l),
+    dorstTijd: Math.max(3.5, DORST_TIJD - 0.4 * l),
   };
 };
 
@@ -133,7 +134,7 @@ function zaai(v) {
   const g = GEWASSEN[naam];
   const groei = g.groei * m.groei * rnd(0.85, 1.15);
   // elk plantje heeft minstens één keer dorst; trage gewassen en hogere levels vaker
-  let keren = g.groei > 5.5 ? 2 : 1;
+  let keren = S.level >= 2 && g.groei > 5.5 ? 2 : 1;
   if (S.level >= 4 && Math.random() < 0.5) keren++;
   const dorsten = Array.from({ length: keren }, (_, k) => (k + 1) / (keren + 1) + rnd(-0.1, 0.1));
   Object.assign(v, { fase: 'groeit', gewas: naam, t: 0, groei, rijp: g.rijp * m.rijp, dorsten, perfect: true, dorstig: false, dorstT: 0, verwelkt: null });
@@ -227,7 +228,7 @@ function vrijDoel() {
 function nieuwBeestje() {
   const doel = vrijDoel();
   if (doel === null) return false;
-  const soort = S.level >= 2 && Math.random() < 0.35 ? 'slak' : 'luis';
+  const soort = S.level >= 3 && Math.random() < 0.35 ? 'slak' : 'luis';
   const p = randPunt();
   S.beestjes.push({ soort, ...p, doel, fase: 'loop', leven: BEESTJES[soort].leven, eet: 0, kant: 1, anim: 0, raak: 0, zij: Math.random() < 0.5 ? -1 : 1 });
   return true;
@@ -332,7 +333,7 @@ function werkBeestjesBij(dt) {
   if (S.beestjeKlok <= 0 && plagen.length < m.maxBeestjes) {
     S.beestjeKlok = nieuwBeestje() ? m.beestjeTussen * rnd(0.7, 1.3) : 0.5;
   }
-  if (S.level >= 2) {
+  if (S.level >= 3) {
     S.lieveKlok -= dt;
     if (S.lieveKlok <= 0) {
       nieuwLieveheersbeestje();
@@ -383,7 +384,7 @@ function werkBij(dt) {
     melding(`Level ${level}! Alles gaat sneller`);
     geluid.level();
     toonStand();
-    if (level === 2) setTimeout(() => toestand === 'spelen' && melding('Pas op: slakken! Tik ze 2x'), 2000);
+    if (level === 3) setTimeout(() => toestand === 'spelen' && melding('Pas op: slakken! Tik ze 2x'), 2000);
   }
 
   for (const v of S.vakken) {
