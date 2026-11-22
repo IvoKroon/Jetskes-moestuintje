@@ -1,4 +1,4 @@
-// Moestuin Rush: zaai, oogst snel voordat het rot, en jaag de beestjes weg.
+// Tuinieren: zaai, oogst snel voordat het rot, en jaag de beestjes weg.
 import { lees, bewaar } from '../shared/opslag.js';
 import { plaatje, plaatjeUrl, katPlaatje, maakGrond, maakGras, tekenTekst, KLEUR } from './spel-sprites.js';
 import { geluid } from './spel-geluid.js';
