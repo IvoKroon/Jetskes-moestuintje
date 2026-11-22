@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+    <meta name="theme-color" content="#3e8948" />
+    <title>Moestuin Rush · Jetskes moestuintje</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="../shared/style.css" />
+    <link rel="stylesheet" href="./spel.css" />
+  </head>
+  <body>
+    <div id="spel">
+      <header class="balk">
+        <div class="score">
+          <small id="level">Level 1</small>
+          <span id="score">0</span>
+        </div>
+        <div id="hartjes" class="hartjes"></div>
+        <button id="pauzeKnop" class="knop klein" aria-label="Pauze">II</button>
+      </header>
+
+      <main id="speelveld">
+        <div id="bord">
+          <canvas id="veld" aria-label="Moestuin"></canvas>
+          <div id="melding" class="melding" role="status"></div>
+        </div>
+
+        <section id="start" class="scherm">
+          <div class="kader">
+            <h1>Moestuin Rush</h1>
+            <ul class="uitleg">
+              <li><img data-sprite="zaadje" class="sprite" alt="" />Tik op de aarde om te zaaien</li>
+              <li><img data-sprite="tomaat" class="sprite" alt="" />Tik rijpe groente snel om te oogsten, anders rot hij</li>
+              <li><img data-sprite="luis" class="sprite" alt="" />Tik luizen en slakken weg voordat ze alles opeten</li>
+              <li><img data-sprite="lieveheersbeestje" class="sprite" alt="" />Lieveheersbeestjes zijn vriendjes: niet tikken!</li>
+            </ul>
+            <button id="startKnop" class="knop groen breed">Start</button>
+            <div class="records" hidden>
+              <h3 id="record">Record 0</h3>
+              <ol id="startScores"></ol>
+            </div>
+          </div>
+        </section>
+
+        <section id="pauze" class="scherm" hidden>
+          <div class="kader">
+            <h2>Even pauze</h2>
+            <button id="verderKnop" class="knop groen breed">Verder</button>
+            <button id="geluidKnop" class="knop breed" aria-pressed="true">Geluid aan</button>
+            <button id="stopKnop" class="knop rood breed">Stoppen</button>
+          </div>
+        </section>
+
+        <section id="einde" class="scherm" hidden>
+          <div class="kader">
+            <h2 id="eindTitel">Oogst voorbij</h2>
+            <p class="eindscore" id="eindScore">0</p>
+            <p id="eindTekst"></p>
+            <ul id="eindOogst" class="oogst"></ul>
+            <button id="opnieuwKnop" class="knop groen breed">Nog een keer</button>
+            <div class="records" hidden>
+              <h3>Beste scores</h3>
+              <ol id="eindScores"></ol>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <nav class="menu" aria-label="Menu">
+      <a href="../">Thuis</a>
+      <a href="./" class="actief">Spel</a>
+      <a href="../planner/">Moestuin</a>
+    </nav>
+    <script type="module" src="./spel.js"></script>
+  </body>
+</html>
