@@ -28,3 +28,16 @@ npm run dev
 ## Online zetten
 
 De site staat op Vercel. Vercel herkent Vite: build-commando `npm run build`, output-map `dist`.
+
+## Online highscore
+
+Het spel heeft een gedeelde top 10. Na een potje vul je je naam in en gaat de score naar `/api/highscores`,
+een Vercel-functie (`api/highscores.js`, logica in `api/_highscore.js`). De scores staan in Upstash Redis
+(gratis, via de Vercel Marketplace). De functie leest `KV_REST_API_URL` en `KV_REST_API_TOKEN`
+(of `UPSTASH_REDIS_REST_URL` en `UPSTASH_REDIS_REST_TOKEN`), die Vercel zelf invult als je de database koppelt.
+
+Bescherming: naam maximaal 12 tekens zonder rare tekens, score moet passen bij de speeltijd,
+maximaal 10 inzendingen per kwartier per IP-adres, en alleen de beste 200 scores blijven bewaard.
+
+Lokaal (`npm run dev`) werkt `/api/highscores` ook, met een tijdelijke database in het geheugen.
+Een score wissen: in het Upstash-dashboard de sleutel `moestuinrush:scores` openen en de regel verwijderen.

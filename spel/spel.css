@@ -115,3 +115,21 @@ body.speelt #spel { bottom: env(safe-area-inset-bottom); }
 .records h3 { font-size: 11px; margin-bottom: 8px; }
 .records ol { margin: 0; padding: 0 0 0 28px; text-align: left; }
 .records li span:last-child { float: right; opacity: 0.6; }
+
+/* Online highscore op het eindscherm */
+.naam-form { margin: 0 0 16px; font-size: 10px; text-align: left; }
+.naam-form label { display: block; margin-bottom: 8px; }
+.naam-rij { display: flex; gap: 8px; }
+.naam-rij[hidden] { display: none; }
+.naam-rij input {
+  flex: 1; min-width: 0; min-height: 40px; padding: 6px 8px;
+  font: inherit; font-size: 16px; /* 16px: anders zoomt iOS in */
+  font-family: 'Press Start 2P', monospace;
+  color: var(--inkt); background: #fff; border: 3px solid var(--inkt); border-radius: 0;
+}
+.naam-rij input:focus { outline: 3px solid var(--oranje); outline-offset: 0; }
+.naam-melding { margin: 8px 0 0; min-height: 1em; line-height: 1.5; }
+.naam-melding:empty { display: none; }
+.records.online li span:first-child { display: inline-block; max-width: 70%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }
+.records.online li span:last-child { opacity: 1; }
+.records li.jij { color: var(--oranje); }
