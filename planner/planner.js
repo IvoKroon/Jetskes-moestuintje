@@ -1,6 +1,6 @@
 import { lees, bewaar } from '../shared/opslag.js';
 import { PALET, PLANTEN, PLANT, MAANDTAKEN, relatie } from './plants.js';
-import { STARTTUIN } from './starttuin.js';
+import { STARTTUINEN } from './starttuin.js';
 
 // Moestuinplanner in de stijl van een woninginrichter: een plattegrond in echte centimeters
 // waarop je bakken, paden, een kas en plantvakken sleept, vergroot en draait.
@@ -24,9 +24,10 @@ const ONDERDELEN = {
   compost: { naam: 'Compostbak', w: 100, h: 100, laag: 3, min: 60 },
   regenton: { naam: 'Regenton', w: 60, h: 60, laag: 3, min: 40, rond: true },
   bank: { naam: 'Bankje', w: 150, h: 50, laag: 3, min: 80 },
+  huis: { naam: 'Huis', w: 600, h: 100, laag: 3, min: 100 },
   boom: { naam: 'Fruitboom', w: 300, h: 300, laag: 5, min: 100, rond: true },
 };
-const CATALOGUS_INRICHTING = ['bak', 'bed', 'pad', 'grind', 'gazon', 'kas', 'schuur', 'compost', 'regenton', 'bank', 'boom'];
+const CATALOGUS_INRICHTING = ['bak', 'bed', 'pad', 'grind', 'gazon', 'kas', 'schuur', 'compost', 'regenton', 'bank', 'boom', 'huis'];
 
 // ---------- Pixelart-sprites van de planten ----------
 
@@ -79,12 +80,19 @@ const nieuwId = () => `i${Date.now().toString(36)}${(volgnummer++).toString(36)}
 
 // ---------- Ontwerp-data ----------
 
-function voorbeeldtuin() {
+function maakStartTuin(basis) {
   return {
-    breedte: STARTTUIN.breedte,
-    lengte: STARTTUIN.lengte,
-    items: STARTTUIN.items.map((i) => ({ id: nieuwId(), ...i })),
+    id: nieuwId(),
+    naam: basis.naam,
+    breedte: basis.breedte,
+    lengte: basis.lengte,
+    items: basis.items.map((i) => ({ id: nieuwId(), ...i })),
   };
+}
+
+// De eerste startlocatie, voor "Voorbeeldtuin laden".
+function voorbeeldtuin() {
+  return maakStartTuin(STARTTUINEN[0]);
 }
 
 function geldig(o) {
@@ -97,6 +105,7 @@ let tuinen = [];
 let actiefId = null;
 let ontwerp = null;
 let eersteKeer = false;
+let startSchatting = false;
 
 function schoon(t) {
   if (!t.id) t.id = nieuwId();
@@ -111,7 +120,8 @@ function laadTuinen() {
   if (!tuinen.length) {
     const oud = lees(SLEUTEL, null); // de tuin uit de tijd van één locatie
     eersteKeer = !geldig(oud);
-    tuinen = [schoon({ naam: eersteKeer ? STARTTUIN.naam : 'Mijn tuin', ...(eersteKeer ? voorbeeldtuin() : oud) })];
+    tuinen = eersteKeer ? STARTTUINEN.map((t) => schoon(maakStartTuin(t))) : [schoon({ naam: 'Mijn tuin', ...oud })];
+    startSchatting = eersteKeer && STARTTUINEN.some((t) => t.schatting);
   }
   ontwerp = tuinen.find((t) => t.id === opgeslagen?.actief) || tuinen[0];
   actiefId = ontwerp.id;
@@ -285,6 +295,13 @@ function tekenItem(item) {
       }
       break;
     }
+    case 'huis': {
+      s('rect', { width: w, height: h, fill: '#a3523f', stroke: '#6e3326', 'stroke-width': 3 }, g);
+      const lijnen = s('g', { stroke: '#8a4130', 'stroke-width': 1.5 }, g);
+      if (w >= h) for (let x = 25; x < w; x += 25) s('line', { x1: x, y1: 0, x2: x, y2: h }, lijnen);
+      else for (let y = 25; y < h; y += 25) s('line', { x1: 0, y1: y, x2: w, y2: y }, lijnen);
+      break;
+    }
     case 'schuur': {
       s('rect', { width: w, height: h, fill: '#8a4b38', stroke: '#5a2f22', 'stroke-width': 3 }, g);
       if (lang) s('rect', { x: w / 2, width: w / 2, height: h, fill: '#a35a43' }, g);
@@ -331,7 +348,7 @@ function tekenItem(item) {
     }
   }
   // Naam op grote onderdelen
-  const label = { kas: 'Kas', schuur: 'Schuur', compost: 'Compost' }[item.t];
+  const label = { kas: 'Kas', schuur: 'Schuur', compost: 'Compost', huis: 'Huis' }[item.t];
   if (label && Math.min(w, h) >= 80) {
     const fs = Math.min(24, Math.min(w, h) / 5);
     const bw = label.length * fs * 0.62 + fs * 1.2;
@@ -1301,7 +1318,7 @@ bewaar('moestuin.bezoeken', bezoeken);
 tekenWissel();
 opslaan(); // ook na de overstap van de oude opslag
 if (eersteKeer) {
-  meld('Dit is een voorbeeldtuin. Tik op iets om het aan te passen.');
+  meld(startSchatting ? 'Dit is een eerste schatting van je tuin, gemaakt van een luchtfoto. Klopt iets niet? Sleep het of pas de maat aan.' : 'Dit is een voorbeeldtuin. Tik op iets om het aan te passen.');
 } else if (bezoeken >= 3 && !inBeginscherm() && !lees('moestuin.tipGezien', false)) {
   bewaar('moestuin.tipGezien', true);
   meld('Tip: zet de planner op je beginscherm, dan raak je je tuin niet kwijt. Zie Tuin > Bewaren en back-up.');
