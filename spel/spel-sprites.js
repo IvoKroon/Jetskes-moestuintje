@@ -19,6 +19,7 @@ export const KLEUR = {
   s: '#c0cbdc',
   u: '#0099db',
   l: '#8fd3ff', // lucht
+  O: '#b84a12', // donkeroranje (kat)
   x: '#8a7650', // rot
   X: '#5c4a30', // donker rot
   v: '#8b8b3a', // verwelkt blad
@@ -52,6 +53,37 @@ const EIGEN = {
     'krkrkkrrrk',
     '.krrkkrrk.',
     '..kkkkkk..',
+  ],
+  // een rode kat die over de schutting loopt
+  kat1: [
+    'k........k.k',
+    'k.......kook',
+    '.kkkkkkkokok',
+    '.kooOooOooop',
+    '.koOooOoowwk',
+    '.koooooookk.',
+    '.ko.ko..ko..',
+    '.kk.kk..kk..',
+  ],
+  kat2: [
+    'k........k.k',
+    'k.......kook',
+    '.kkkkkkkokok',
+    '.kooOooOooop',
+    '.koOooOoowwk',
+    '.koooooookk.',
+    '..ko..ko.ko.',
+    '..kk..kk.kk.',
+  ],
+  katZit: [
+    '.........k.k',
+    'k.......kook',
+    'k.kkkkkkokok',
+    '.kooOooOooop',
+    '.koOooOoowwk',
+    '.koooooookk.',
+    '.ko......ko.',
+    '.kk......kk.',
   ],
   druppel: ['..k..', '.kuk.', 'kuulk', 'kuuuk', '.kkk.'],
   glinster: ['..y..', '.yyy.', 'yywyy', '.yyy.', '..y..'],

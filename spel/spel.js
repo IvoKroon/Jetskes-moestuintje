@@ -24,7 +24,7 @@ const GEWASSEN = {
 };
 
 const BEESTJES = {
-  luis: { snelheid: 7, leven: 1, eetTijd: 3.5, punten: 5, straal: 6 },
+  luis: { snelheid: 9, leven: 1, eetTijd: 3.5, punten: 5, straal: 6 },
   slak: { snelheid: 3.5, leven: 2, eetTijd: 4.5, punten: 10, straal: 6 },
   lieveheersbeestje: { snelheid: 9, leven: 1, punten: -25, straal: 4 },
 };
@@ -97,8 +97,10 @@ function nieuwSpel() {
     tijd: 0,
     combo: 0,
     laatsteWater: -9,
-    beestjeKlok: 25,
+    beestjeKlok: 12,
     lieveKlok: 15,
+    kat: null,
+    katKlok: 5,
     open: new Set(Object.keys(GEWASSEN).filter((g) => GEWASSEN[g].vanaf === 0)),
     geoogst: {},
     weggejaagd: 0,
@@ -113,9 +115,9 @@ const moeilijk = () => {
     // en daarna wordt het per level maar een klein beetje moeilijker
     groei: Math.max(0.6, 1.5 - 0.08 * l),
     rijp: Math.max(0.6, 1.7 - 0.1 * l),
-    beestjeTussen: Math.max(2, 10 - 0.8 * l),
-    maxBeestjes: Math.min(1 + Math.floor(l / 2), 5),
-    snel: 1 + 0.04 * l,
+    beestjeTussen: Math.max(1.3, 6 - 0.7 * l),
+    maxBeestjes: Math.min(2 + Math.floor(l / 2), 6),
+    snel: 1.1 + 0.06 * l,
     eet: Math.max(0.5, 0.85 - 0.05 * l),
     dorstTijd: Math.max(3.5, DORST_TIJD - 0.4 * l),
   };
@@ -229,7 +231,7 @@ function vrijDoel() {
 function nieuwBeestje() {
   const doel = vrijDoel();
   if (doel === null) return false;
-  const soort = S.level >= 3 && Math.random() < 0.35 ? 'slak' : 'luis';
+  const soort = S.level >= 2 && Math.random() < 0.35 ? 'slak' : 'luis';
   const p = randPunt();
   S.beestjes.push({ soort, ...p, doel, fase: 'loop', leven: BEESTJES[soort].leven, eet: 0, kant: 1, anim: 0, raak: 0, zij: Math.random() < 0.5 ? -1 : 1 });
   return true;
@@ -334,7 +336,7 @@ function werkBeestjesBij(dt) {
   if (S.beestjeKlok <= 0 && plagen.length < m.maxBeestjes) {
     S.beestjeKlok = nieuwBeestje() ? m.beestjeTussen * rnd(0.7, 1.3) : 0.5;
   }
-  if (S.level >= 3) {
+  if (S.level >= 2) {
     S.lieveKlok -= dt;
     if (S.lieveKlok <= 0) {
       nieuwLieveheersbeestje();
@@ -369,7 +371,7 @@ function melding(tekst, sprite) {
     img.alt = '';
     meldingEl.append(img);
   }
-  meldingEl.append(tekst);
+  meldingEl.append(Object.assign(document.createElement('span'), { textContent: tekst }));
   meldingEl.classList.add('zichtbaar');
   clearTimeout(meldingKlok);
   meldingKlok = setTimeout(() => meldingEl.classList.remove('zichtbaar'), 1800);
@@ -385,7 +387,7 @@ function werkBij(dt) {
     melding(`Level ${level}! Alles gaat sneller`);
     geluid.level();
     toonStand();
-    if (level === 3) setTimeout(() => toestand === 'spelen' && melding('Pas op: slakken! Tik ze 2x'), 2000);
+    if (level === 2) setTimeout(() => toestand === 'spelen' && melding('Pas op: slakken! Tik ze 2x'), 2000);
   }
 
   for (const v of S.vakken) {
@@ -559,9 +561,13 @@ function balk(v, deel, kleur) {
 function pasGrootteAan() {
   const ruimte = $('speelveld').getBoundingClientRect();
   const rand = 12; // kaderrand en schaduw
-  const schaal = Math.max(1, Math.min((ruimte.width - rand) / W, (ruimte.height - rand) / H));
+  const meldingRij = 64;
+  const schaal = Math.max(1, Math.min((ruimte.width - rand) / W, (ruimte.height - rand - meldingRij) / (H + KAT_H)));
   bord.style.width = `${Math.floor(W * schaal)}px`;
   bord.style.height = `${Math.floor(H * schaal)}px`;
+  kattenpad.style.width = `${Math.floor(W * schaal) + 8}px`;
+  kattenpad.style.height = `${Math.floor(KAT_H * schaal)}px`;
+  meldingEl.parentElement.style.width = `${Math.floor(W * schaal) + 8}px`;
 }
 new ResizeObserver(pasGrootteAan).observe($('speelveld'));
 
@@ -571,12 +577,101 @@ canvas.addEventListener('pointerdown', (e) => {
   tik(((e.clientX - r.left) / r.width) * W, ((e.clientY - r.top) / r.height) * H);
 });
 
+// ---------- De kat op de schutting ----------
+// Loopt af en toe boven de tuin langs, nooit over het speelveld. Tik erop voor een miauw.
+
+const KAT_H = 16;
+const kattenpad = $('kattenpad');
+const kctx = kattenpad.getContext('2d');
+kattenpad.width = W;
+kattenpad.height = KAT_H;
+const schutting = (() => {
+  const c = document.createElement('canvas');
+  c.width = W;
+  c.height = KAT_H;
+  const k = c.getContext('2d');
+  k.fillStyle = KLEUR.l;
+  k.fillRect(0, 0, W, KAT_H);
+  k.fillStyle = KLEUR.b;
+  k.fillRect(0, 10, W, KAT_H - 10);
+  k.fillStyle = KLEUR.B;
+  k.fillRect(0, 10, W, 1);
+  for (let x = 3; x < W; x += 5) k.fillRect(x, 11, 1, KAT_H - 11);
+  k.fillRect(0, 13, W, 1);
+  return c;
+})();
+
+function werkKatBij(dt) {
+  const kat = S.kat;
+  if (!kat) {
+    S.katKlok -= dt;
+    if (S.katKlok <= 0) {
+      const kant = Math.random() < 0.5 ? 1 : -1;
+      S.kat = { x: kant > 0 ? -12 : W, kant, fase: 'loop', t: 0, zitOp: Math.random() < 0.6 ? rnd(12, W - 24) : null };
+    }
+    return;
+  }
+  kat.t += dt;
+  if (kat.fase === 'zit') {
+    if (kat.t > 2.5) Object.assign(kat, { fase: 'loop', t: 0 });
+    return;
+  }
+  kat.x += kat.kant * 9 * dt;
+  if (kat.zitOp !== null && Math.abs(kat.x - kat.zitOp) < 0.5) {
+    Object.assign(kat, { fase: 'zit', t: 0, zitOp: null });
+    geluid.miauw();
+  }
+  if (kat.x < -14 || kat.x > W + 2) {
+    S.kat = null;
+    S.katKlok = rnd(10, 20);
+  }
+}
+
+function tekenKat() {
+  kctx.drawImage(schutting, 0, 0);
+  const kat = S.kat;
+  if (!kat) return;
+  const naam = kat.fase === 'zit' ? 'katZit' : Math.floor(kat.t * 6) % 2 ? 'kat2' : 'kat1';
+  kctx.save();
+  kctx.translate(Math.round(kat.x) + (kat.kant < 0 ? 12 : 0), 2);
+  if (kat.kant < 0) kctx.scale(-1, 1);
+  kctx.drawImage(plaatje(naam), 0, 0);
+  kctx.restore();
+  if (kat.hartje > 0) {
+    kctx.fillStyle = KLEUR.p;
+    const y = Math.round(kat.hartje * 3);
+    kctx.fillRect(Math.round(kat.x) + 5, y, 1, 1);
+    kctx.fillRect(Math.round(kat.x) + 7, y, 1, 1);
+    kctx.fillRect(Math.round(kat.x) + 6, y + 1, 1, 1);
+  }
+}
+
+kattenpad.addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  const kat = S?.kat;
+  if (toestand !== 'spelen' || !kat) return;
+  const r = kattenpad.getBoundingClientRect();
+  const x = ((e.clientX - r.left) / r.width) * W;
+  if (Math.abs(x - (kat.x + 6)) < 10) {
+    geluid.wakker();
+    geluid.miauw();
+    kat.hartje = 1;
+  }
+});
+
 let vorige = 0;
 function lus(nu) {
   const dt = Math.min(0.05, (nu - vorige) / 1000 || 0);
   vorige = nu;
-  if (toestand === 'spelen') werkBij(dt);
-  if (S) teken();
+  if (toestand === 'spelen') {
+    werkBij(dt);
+    if (S.kat?.hartje > 0) S.kat.hartje = Math.max(0, S.kat.hartje - dt);
+    werkKatBij(dt);
+  }
+  if (S) {
+    teken();
+    tekenKat();
+  }
   requestAnimationFrame(lus);
 }
 
