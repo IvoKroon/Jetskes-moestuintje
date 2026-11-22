@@ -13,22 +13,59 @@
   </head>
   <body>
     <main id="app">
-      <div class="kader">
-        <h1><img data-sprite="aardbeientaart" class="sprite" alt="" />Bakkerij</h1>
+      <div class="kader kop">
+        <h1><img data-sprite="oven" class="sprite oven-kop" alt="" />Bakkerij</h1>
         <div id="beurs"></div>
-        <div id="dicht" class="dicht" hidden>
-          <img data-sprite="slot" class="sprite slot" alt="" />
-          <p id="dichtTekst"></p>
-          <button id="koopBakkerij" class="knop breed"></button>
-        </div>
-        <div id="open" hidden>
-          <p id="uitleg" class="uitleg"></p>
-          <ul id="recepten" class="recepten"></ul>
-        </div>
+      </div>
+
+      <section id="dicht" class="kader dicht" hidden>
+        <img data-sprite="slot" class="sprite slot" alt="" />
+        <p id="dichtTekst"></p>
+        <div class="balk" aria-hidden="true"><div id="dichtBalk"></div></div>
+        <button id="koopBakkerij" class="knop breed"></button>
+      </section>
+
+      <div id="open" hidden>
+        <section class="kader">
+          <h2>Je oogst</h2>
+          <ul id="oogst" class="oogst"></ul>
+          <p id="geenOogst" class="klein" hidden>Nog niks geoogst. Speel Tuinieren om groente te verzamelen!</p>
+        </section>
+
+        <h2 class="tussenkop">Recepten</h2>
+        <ul id="recepten" class="recepten"></ul>
+
+        <section id="plank" class="kader plank" hidden>
+          <h2>Klaar voor de markt</h2>
+          <ul id="taarten" class="taarten"></ul>
+          <p id="plankTekst" class="klein"></p>
+        </section>
+      </div>
+
+      <div class="onder">
         <a class="knop groen breed" href="../markt/"><img data-sprite="muntje" class="sprite" alt="" />Naar de markt</a>
         <a class="knop breed" href="../">Terug naar huis</a>
       </div>
     </main>
+
+    <div id="bakken" class="bakken" hidden role="dialog" aria-modal="true" aria-labelledby="bakTitel">
+      <div class="kader bak-kader">
+        <p id="bakTitel" class="bak-titel"></p>
+        <div class="bak-plek">
+          <div id="vliegers" class="vliegers"></div>
+          <img id="bakOven" class="sprite bak-oven" alt="" />
+          <img id="bakTaart" class="sprite bak-taart" alt="" hidden />
+          <div id="glinsters" class="glinsters"></div>
+        </div>
+        <div class="balk" aria-hidden="true"><div id="bakBalk"></div></div>
+        <p id="bakTekst" class="klein" aria-live="polite"></p>
+        <div id="bakKnoppen" class="bak-knoppen" hidden>
+          <button id="nogEen" class="knop groen breed"></button>
+          <button id="klaar" class="knop breed">Verder</button>
+        </div>
+      </div>
+    </div>
+
     <nav class="menu" aria-label="Menu">
       <a href="../" class="actief">Thuis</a>
       <a href="../spel/">Tuinieren</a>

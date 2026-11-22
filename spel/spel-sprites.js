@@ -70,28 +70,100 @@ const EIGEN = {
   glinsterKlein: ['.....', '..y..', '.ywy.', '..y..', '.....'],
 };
 
-// Taarten uit de bakkerij: één vorm met een rooster van korst (C) over de vulling (F).
-const TAART = [
-  '..........',
-  '..........',
-  '..kkkkkk..',
-  '.kCFCFCFk.',
-  'kFCFCFCFCk',
-  'kCFCFCFCFk',
-  'kaaaaaaaak',
-  'kaXaXaXaXk',
-  '.kkkkkkkk.',
-  '..........',
-];
-const TAART_KLEUR = {
-  aardbeientaart: { F: 'r', C: 'a' },
-  pompoentaart: { F: 'O', C: 'a' },
-  wortelcake: { F: 'o', C: 'w' },
-  tomatenquiche: { F: 'y', C: 'r' },
-};
-for (const [naam, { F, C }] of Object.entries(TAART_KLEUR)) {
-  EIGEN[naam] = TAART.map((rij) => rij.replace(/F/g, F).replace(/C/g, C));
-}
+// Taarten uit de bakkerij: elk een eigen plaatje (10x10, net als de groente).
+Object.assign(EIGEN, {
+  wortelcake: [
+    '....gg....',
+    '...kook...',
+    '...kok....',
+    'kkkkkkkkkk',
+    'kwwwwwwwwk',
+    'kbwbbwbwbk',
+    'kbbobbbobk',
+    'kbBbbbBbbk',
+    'kkkkkkkkkk',
+    '..........',
+  ],
+  tomatenquiche: [
+    '..........',
+    '..kkkkkk..',
+    '.kaaaaaak.',
+    'kayrryygak',
+    'kayrwyyyak',
+    'kagyyrryak',
+    'kayyyrwyak',
+    '.kaaaaaak.',
+    '..kkkkkk..',
+    '..........',
+  ],
+  aardbeientaart: [
+    '..........',
+    '..gg..gg..',
+    '.krrkkrrk.',
+    '.krwkkrwk.',
+    'kwwwwwwwwk',
+    'kpwpwpwpwk',
+    'kaaaaaaaak',
+    'kaBaBaBaBk',
+    '.kkkkkkkk.',
+    '..........',
+  ],
+  pompoentaart: [
+    '..........',
+    '....ww....',
+    '...wwsw...',
+    '.kkkkkkkk.',
+    'kooooooook',
+    'kOoOoOoOok',
+    'kaaaaaaaak',
+    'kaBaBaBaBk',
+    '.kkkkkkkk.',
+    '..........',
+  ],
+  brood: [
+    '..........',
+    '..........',
+    '...kkkk...',
+    '.kkbbbbkk.',
+    'kbbabbabbk',
+    'kbabbabbak',
+    'kbbbbbbbbk',
+    'kBbbbbbbBk',
+    '.kkkkkkkk.',
+    '..........',
+  ],
+  vlaai: [
+    '..........',
+    '..kkkkkk..',
+    '.kaaaaaak.',
+    'karrwrrrak',
+    'karrrrwrak',
+    'karwrrrrak',
+    'karrrwrrak',
+    '.kaaaaaak.',
+    '..kkkkkk..',
+    '..........',
+  ],
+  // De oven van de bakkerij; ovenAan gloeit tijdens het bakken.
+  oven: [
+    '..kkkkkkkkkkkk..',
+    '.kssssssssssssk.',
+    'kssrssyssgsssssk',
+    'kssssssssssssssk',
+    'kkkkkkkkkkkkkkkk',
+    'kskkkkkkkkkkkksk',
+    'kskzzzzzzzzzzksk',
+    'kskzzzzzzzzzzksk',
+    'kskzzzzzzzzzzksk',
+    'kskzzzzzzzzzzksk',
+    'kskkkkkkkkkkkksk',
+    'ksssssskkssssssk',
+    'kssssssssssssssk',
+    'kkkkkkkkkkkkkkkk',
+    '.kk..........kk.',
+  ],
+});
+EIGEN.ovenAan = EIGEN.oven.map((rij, y) => (y >= 6 && y <= 9 ? rij.replace(/z/g, y === 6 || y === 9 ? 'o' : 'y') : rij));
 
 function maak(raster, omzet) {
   const breedte = Math.max(...raster.map((r) => r.length));

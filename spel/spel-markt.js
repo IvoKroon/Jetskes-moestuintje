@@ -19,10 +19,12 @@ const GROENTE_PRIJZEN = { radijs: 1, wortel: 2, tomaat: 3, aardbei: 4, pompoen: 
 
 // De bakkerij: van een paar producten bak je een taart die meer oplevert dan de losse producten.
 export const RECEPTEN = {
+  brood: { naam: 'Brood', meer: 'broden', nodig: { radijs: 3, wortel: 2 }, prijs: 10 },
   wortelcake: { naam: 'Wortelcake', meer: 'wortelcakes', nodig: { wortel: 3 }, prijs: 12 },
   tomatenquiche: { naam: 'Tomatenquiche', meer: 'tomatenquiches', nodig: { tomaat: 2, radijs: 2 }, prijs: 15 },
   aardbeientaart: { naam: 'Aardbeientaart', meer: 'aardbeientaarten', nodig: { aardbei: 3 }, prijs: 20 },
   pompoentaart: { naam: 'Pompoentaart', meer: 'pompoentaarten', nodig: { pompoen: 1, wortel: 2 }, prijs: 22 },
+  vlaai: { naam: 'Vlaai', meer: 'vlaaien', nodig: { aardbei: 5 }, prijs: 30 },
 };
 
 export const PRIJZEN = {
