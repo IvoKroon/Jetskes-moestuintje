@@ -35,12 +35,16 @@ export const KATTEN = {
   zwartwit: { naam: 'Willem', tekst: 'Zwart-witte kat met een aureooltje. Een echte engel.' },
 };
 
-// De eerste kat is snel te verdienen, de tweede kost wat meer.
-const KAT_PRIJZEN = [30, 75];
+// De katten zijn een flinke spaardoel: de eerste na een tijdje, de tweede kost veel meer.
+const KAT_PRIJZEN = [100, 250];
+
+// De bakkerij moet je eerst kopen voordat je er taarten kunt bakken.
+export const BAKKERIJ_PRIJS = 50;
 
 export const voorraad = () => lees('spel.voorraad', {}) ?? {};
 export const munten = () => lees('spel.munten', 0) ?? 0;
 export const eigenKatten = () => (lees('spel.katten', []) ?? []).filter((k) => KATTEN[k]);
+export const heeftBakkerij = () => lees('spel.bakkerij', false) === true;
 export const katPrijs = () => KAT_PRIJZEN[Math.min(eigenKatten().length, KAT_PRIJZEN.length - 1)];
 
 /** Na elke oogst: één stuk erbij in de voorraad. */
@@ -67,13 +71,21 @@ export function kanBakken(recept, v = voorraad()) {
 
 export function bak(recept) {
   const v = voorraad();
-  if (!kanBakken(recept, v)) return false;
+  if (!heeftBakkerij() || !kanBakken(recept, v)) return false;
   for (const [g, n] of Object.entries(RECEPTEN[recept].nodig)) {
     v[g] -= n;
     if (!v[g]) delete v[g];
   }
   v[recept] = (v[recept] ?? 0) + 1;
   bewaar('spel.voorraad', v);
+  return true;
+}
+
+/** Koopt de bakkerij voor BAKKERIJ_PRIJS munten. Geeft true als het gelukt is. */
+export function koopBakkerij() {
+  if (heeftBakkerij() || munten() < BAKKERIJ_PRIJS) return false;
+  bewaar('spel.munten', munten() - BAKKERIJ_PRIJS);
+  bewaar('spel.bakkerij', true);
   return true;
 }
 
