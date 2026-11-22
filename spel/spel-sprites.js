@@ -24,6 +24,7 @@ export const KLEUR = {
   T: '#8a6a48', // cyperse vacht
   t: '#4d3a28', // cyperse strepen
   c: '#e3cfa8', // lichte buik
+  a: '#d19a4a', // lichtbruin blad (te veel water)
   x: '#8a7650', // rot
   X: '#5c4a30', // donker rot
   v: '#8b8b3a', // verwelkt blad
@@ -31,6 +32,9 @@ export const KLEUR = {
 };
 
 // Hoe een rijpe groente verkleurt als hij rot.
+// Hoe een plantje kleurt na te veel water: bruin blad.
+const BRUIN = { g: 'a', G: 'X', y: 'a' };
+
 const ROT = { r: 'x', R: 'X', o: 'x', y: 'X', g: 'v', G: 'V', w: 's', p: 'x' };
 
 const EIGEN = {
@@ -85,12 +89,12 @@ function maak(raster, omzet) {
 const cache = new Map();
 
 /** Een sprite als canvas, klaar voor drawImage. `rot` geeft de verrotte versie. */
-export function plaatje(naam, { rot = false } = {}) {
-  const sleutel = `${naam}${rot ? ':rot' : ''}`;
+export function plaatje(naam, { rot = false, bruin = false } = {}) {
+  const sleutel = `${naam}${rot ? ':rot' : ''}${bruin ? ':bruin' : ''}`;
   if (!cache.has(sleutel)) {
     const raster = EIGEN[naam] ?? SPRITES[naam];
     if (!raster) throw new Error(`Onbekende sprite: ${naam}`);
-    cache.set(sleutel, maak(raster, rot ? ROT : null));
+    cache.set(sleutel, maak(raster, rot ? ROT : bruin ? BRUIN : null));
   }
   return cache.get(sleutel);
 }

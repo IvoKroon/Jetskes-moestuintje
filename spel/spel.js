@@ -100,6 +100,7 @@ function nieuwSpel() {
     beestjeKlok: 12,
     lieveKlok: 15,
     kat: null,
+    teVeelUitgelegd: false,
     katKlok: 5,
     volgendeKat: Math.random() < 0.5 ? 'zwartwit' : 'cyperse',
     katStof: [],
@@ -144,7 +145,7 @@ function zaai(v) {
   if (S.level >= 3 && Math.random() < 0.5) keren++;
   const eerste = rnd(0.08, 0.2);
   const dorsten = Array.from({ length: keren }, (_, k) => eerste + (k * (0.85 - eerste)) / (keren - 1) + (k ? rnd(-0.05, 0.05) : 0));
-  Object.assign(v, { fase: 'groeit', gewas: naam, t: 0, groei, rijp: g.rijp * m.rijp, dorsten, perfect: true, dorstig: false, dorstT: 0, verwelkt: null });
+  Object.assign(v, { fase: 'groeit', gewas: naam, t: 0, groei, rijp: g.rijp * m.rijp, dorsten, perfect: true, dorstig: false, dorstT: 0, verwelkt: null, teVeel: 0, laatsteWater: -9 });
   stof(v.x + 8, v.y + 12, KLEUR.b, 3);
   geluid.zaai();
 }
@@ -172,13 +173,36 @@ function geefWater(v) {
   S.laatsteWater = S.tijd;
   const keer = Math.min(S.combo, MAX_COMBO);
   const punten = Math.round((snel ? 5 : 2) * (1 + (keer - 1) * 0.5));
-  Object.assign(v, { dorstig: false, dorstT: 0 });
+  Object.assign(v, { dorstig: false, dorstT: 0, laatsteWater: S.tijd });
   stof(v.x + 8, v.y + 2, KLEUR.u, 6);
   zweef(`+${punten}`, v.x + 8, v.y + 2, snel ? KLEUR.l : KLEUR.w);
   if (keer > 1) zweef(`x${keer}`, v.x + 8, v.y + 9, KLEUR.o, 0.15);
   geluid.water(keer);
   trilling(10);
   punt(punten);
+}
+
+// Water geven terwijl het plantje geen dorst heeft = te veel water.
+// De eerste keer wordt het bruin (met uitleg), de tweede keer gaat het dood.
+function teVeelWater(v) {
+  if (S.tijd - v.laatsteWater < 0.5) return; // per ongeluk dubbel getikt: niet meetellen
+  v.laatsteWater = S.tijd;
+  v.teVeel++;
+  v.perfect = false;
+  stof(v.x + 8, v.y + 4, KLEUR.u, 4);
+  if (v.teVeel >= 2) {
+    Object.assign(v, { fase: 'rot', t: 0, dorstig: false, verwelkt: stadium(v) });
+    zweef('-', v.x + 8, v.y + 3, KLEUR.r);
+    melding('Verzopen! Te veel water kost een hartje', 'druppel');
+    verliesHartje();
+    return;
+  }
+  v.wiebel = 0.3;
+  zweef('!', v.x + 8, v.y + 2, KLEUR.o);
+  geluid.nee();
+  trilling(30);
+  melding(S.teVeelUitgelegd ? 'Te veel water! Nog een keer en hij gaat dood' : 'Oei, te veel water! Alleen water geven als er een druppel is', 'druppel');
+  S.teVeelUitgelegd = true;
 }
 
 const stadium = (v) => {
@@ -470,10 +494,7 @@ function tik(x, y) {
     Object.assign(v, { fase: 'leeg', gewas: null, t: 0 });
     geluid.opruimen();
   }
-  else if (v.fase === 'groeit') {
-    v.wiebel = 0.2;
-    geluid.nee();
-  }
+  else if (v.fase === 'groeit') teVeelWater(v);
 }
 
 // ---------- Tekenen ----------
@@ -503,7 +524,8 @@ function teken() {
         if (over > 0.4 || knipper) ctx.drawImage(plaatje('druppel'), v.x + 11, v.y - 1 + (knipper ? 0 : 1));
         balk(v, over, KLEUR.u);
       } else {
-        ctx.drawImage(plaatje(stadium(v)), sx, sy);
+        // bruin na te veel water
+        ctx.drawImage(plaatje(stadium(v), { bruin: v.teVeel > 0 }), sx, sy);
         balk(v, deel, KLEUR.l);
       }
     } else if (v.fase === 'rijp') {
