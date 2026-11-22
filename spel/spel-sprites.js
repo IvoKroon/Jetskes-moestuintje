@@ -19,7 +19,11 @@ export const KLEUR = {
   s: '#c0cbdc',
   u: '#0099db',
   l: '#8fd3ff', // lucht
-  O: '#b84a12', // donkeroranje (kat)
+  O: '#b84a12', // donkeroranje
+  z: '#3a3436', // zwarte vacht
+  T: '#8a6a48', // cyperse vacht
+  t: '#4d3a28', // cyperse strepen
+  c: '#e3cfa8', // lichte buik
   x: '#8a7650', // rot
   X: '#5c4a30', // donker rot
   v: '#8b8b3a', // verwelkt blad
@@ -54,37 +58,8 @@ const EIGEN = {
     '.krrkkrrk.',
     '..kkkkkk..',
   ],
-  // een rode kat die over de schutting loopt
-  kat1: [
-    'k........k.k',
-    'k.......kook',
-    '.kkkkkkkokok',
-    '.kooOooOooop',
-    '.koOooOoowwk',
-    '.koooooookk.',
-    '.ko.ko..ko..',
-    '.kk.kk..kk..',
-  ],
-  kat2: [
-    'k........k.k',
-    'k.......kook',
-    '.kkkkkkkokok',
-    '.kooOooOooop',
-    '.koOooOoowwk',
-    '.koooooookk.',
-    '..ko..ko.ko.',
-    '..kk..kk.kk.',
-  ],
-  katZit: [
-    '.........k.k',
-    'k.......kook',
-    'k.kkkkkkokok',
-    '.kooOooOooop',
-    '.koOooOoowwk',
-    '.koooooookk.',
-    '.ko......ko.',
-    '.kk......kk.',
-  ],
+  muntje: ['.kkk.', 'kyyyk', 'kywyk', 'kyyyk', '.kkk.'],
+  botje: ['ww...ww', 'wswwwsw', 'ww...ww'],
   druppel: ['..k..', '.kuk.', 'kuulk', 'kuuuk', '.kkk.'],
   glinster: ['..y..', '.yyy.', 'yywyy', '.yyy.', '..y..'],
   glinsterKlein: ['.....', '..y..', '.ywy.', '..y..', '.....'],
@@ -207,4 +182,86 @@ export function tekenTekst(ctx, tekst, x, y, kleur) {
   };
   for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) zet(dx, dy, KLEUR.k);
   zet(0, 0, kleur);
+}
+
+// ---------- Katten ----------
+// Eén vorm voor beide katten (12x8, kijkt naar rechts); de letters worden per kat ingekleurd:
+// A = vacht, Z = rug, D = strepen, H = kop, E = oog, M = snuit, W = poten en borst, N = neusje.
+const KAT_VORM = {
+  loop1: [
+    'Z........k.k',
+    'Z.......kHHk',
+    '.kkkkkkkHEHk',
+    '.kAZZZZZHMMN',
+    '.kDAZZDAWMWk',
+    '.kAAAAAAWWk.',
+    '.kW.kW..kW..',
+    '.kk.kk..kk..',
+  ],
+  loop2: [
+    'Z........k.k',
+    'Z.......kHHk',
+    '.kkkkkkkHEHk',
+    '.kAZZZZZHMMN',
+    '.kDAZZDAWMWk',
+    '.kAAAAAAWWk.',
+    '..kW..kW.kW.',
+    '..kk..kk.kk.',
+  ],
+  zit: [
+    '.........k.k',
+    '........kHHk',
+    'Z.kkkkkkHEHk',
+    'ZkAZZZZZHMMN',
+    'ZkDAZZDAWMWk',
+    '.kAAAAAAWWk.',
+    '.kW......kW.',
+    '.kk......kk.',
+  ],
+  // even door de knieën, staart omhoog
+  plas: [
+    'Z........k.k',
+    'Z.......kHHk',
+    'Z.......HEHk',
+    '.kkkkkkkHMMN',
+    '.kAZZZZZWMWk',
+    '.kDAZZAAWWk.',
+    '.kAAAAAAAWk.',
+    'kWk.....kW..',
+  ],
+  // kop omlaag, voorpootjes graven
+  graaf1: [
+    'Z...........',
+    'Z...........',
+    '.kkkkkkkk.k.',
+    '.kAZZZZZAkHk',
+    '.kDAZZDAHEHk',
+    '.kAAAAAAHMMN',
+    '.kW.kW..WMWk',
+    '.kk.kk.kW.k.',
+  ],
+  graaf2: [
+    'Z...........',
+    'Z...........',
+    '.kkkkkkkk.k.',
+    '.kAZZZZZAkHk',
+    '.kDAZZDAHEHk',
+    '.kAAAAAAHMMN',
+    '.kW.kW..WMWk',
+    '.kk.kk...kWk',
+  ],
+};
+
+// zwart-wit: witte vacht met zwarte vlekken, zwart masker met witte snuit;
+// cyperse: bruin met donkere strepen en een lichte buik
+const KAT_KLEUR = {
+  zwartwit: { A: 'w', Z: 'z', D: 'w', H: 'z', E: 'g', M: 'w', W: 'w', N: 'p' },
+  cyperse: { A: 'T', Z: 't', D: 't', H: 'T', E: 'k', M: 'c', W: 'c', N: 'p' },
+};
+
+/** Een kat in een bepaalde houding, als canvas. */
+export function katPlaatje(soort, houding) {
+  const sleutel = `kat:${soort}:${houding}`;
+  if (!cache.has(sleutel)) cache.set(sleutel, maak(KAT_VORM[houding], KAT_KLEUR[soort]));
+  return cache.get(sleutel);
 }
