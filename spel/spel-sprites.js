@@ -63,6 +63,7 @@ const EIGEN = {
     '..kkkkkk..',
   ],
   muntje: ['.kkk.', 'kyyyk', 'kywyk', 'kyyyk', '.kkk.'],
+  slot: ['..kkk..', '.ks.sk.', '.k...k.', 'kkkkkkk', 'kyyyyyk', 'kyykyyk', 'kyykyyk', 'kyyyyyk', 'kkkkkkk'],
   botje: ['ww...ww', 'wswwwsw', 'ww...ww'],
   druppel: ['..k..', '.kuk.', 'kuulk', 'kuuuk', '.kkk.'],
   glinster: ['..y..', '.yyy.', 'yywyy', '.yyy.', '..y..'],
