@@ -1,6 +1,6 @@
 // Moestuin Rush: zaai, oogst snel voordat het rot, en jaag de beestjes weg.
 import { lees, bewaar } from '../shared/opslag.js';
-import { plaatje, plaatjeUrl, maakGrond, maakGras, tekenTekst, KLEUR } from './spel-sprites.js';
+import { plaatje, plaatjeUrl, katPlaatje, maakGrond, maakGras, tekenTekst, KLEUR } from './spel-sprites.js';
 import { geluid } from './spel-geluid.js';
 
 // ---------- Instellingen ----------
@@ -100,7 +100,12 @@ function nieuwSpel() {
     beestjeKlok: 12,
     lieveKlok: 15,
     kat: null,
+    teVeelUitgelegd: false,
     katKlok: 5,
+    volgendeKat: Math.random() < 0.5 ? 'zwartwit' : 'cyperse',
+    katStof: [],
+    schat: null,
+    plasje: null,
     open: new Set(Object.keys(GEWASSEN).filter((g) => GEWASSEN[g].vanaf === 0)),
     geoogst: {},
     weggejaagd: 0,
@@ -140,7 +145,7 @@ function zaai(v) {
   if (S.level >= 3 && Math.random() < 0.5) keren++;
   const eerste = rnd(0.08, 0.2);
   const dorsten = Array.from({ length: keren }, (_, k) => eerste + (k * (0.85 - eerste)) / (keren - 1) + (k ? rnd(-0.05, 0.05) : 0));
-  Object.assign(v, { fase: 'groeit', gewas: naam, t: 0, groei, rijp: g.rijp * m.rijp, dorsten, perfect: true, dorstig: false, dorstT: 0, verwelkt: null });
+  Object.assign(v, { fase: 'groeit', gewas: naam, t: 0, groei, rijp: g.rijp * m.rijp, dorsten, perfect: true, dorstig: false, dorstT: 0, verwelkt: null, teVeel: 0, laatsteWater: -9 });
   stof(v.x + 8, v.y + 12, KLEUR.b, 3);
   geluid.zaai();
 }
@@ -168,13 +173,36 @@ function geefWater(v) {
   S.laatsteWater = S.tijd;
   const keer = Math.min(S.combo, MAX_COMBO);
   const punten = Math.round((snel ? 5 : 2) * (1 + (keer - 1) * 0.5));
-  Object.assign(v, { dorstig: false, dorstT: 0 });
+  Object.assign(v, { dorstig: false, dorstT: 0, laatsteWater: S.tijd });
   stof(v.x + 8, v.y + 2, KLEUR.u, 6);
   zweef(`+${punten}`, v.x + 8, v.y + 2, snel ? KLEUR.l : KLEUR.w);
   if (keer > 1) zweef(`x${keer}`, v.x + 8, v.y + 9, KLEUR.o, 0.15);
   geluid.water(keer);
   trilling(10);
   punt(punten);
+}
+
+// Water geven terwijl het plantje geen dorst heeft = te veel water.
+// De eerste keer wordt het bruin (met uitleg), de tweede keer gaat het dood.
+function teVeelWater(v) {
+  if (S.tijd - v.laatsteWater < 0.5) return; // per ongeluk dubbel getikt: niet meetellen
+  v.laatsteWater = S.tijd;
+  v.teVeel++;
+  v.perfect = false;
+  stof(v.x + 8, v.y + 4, KLEUR.u, 4);
+  if (v.teVeel >= 2) {
+    Object.assign(v, { fase: 'rot', t: 0, dorstig: false, verwelkt: stadium(v) });
+    zweef('-', v.x + 8, v.y + 3, KLEUR.r);
+    melding('Verzopen! Te veel water kost een hartje', 'druppel');
+    verliesHartje();
+    return;
+  }
+  v.wiebel = 0.3;
+  zweef('!', v.x + 8, v.y + 2, KLEUR.o);
+  geluid.nee();
+  trilling(30);
+  melding(S.teVeelUitgelegd ? 'Te veel water! Nog een keer en hij gaat dood' : 'Oei, te veel water! Alleen water geven als er een druppel is', 'druppel');
+  S.teVeelUitgelegd = true;
 }
 
 const stadium = (v) => {
@@ -466,10 +494,7 @@ function tik(x, y) {
     Object.assign(v, { fase: 'leeg', gewas: null, t: 0 });
     geluid.opruimen();
   }
-  else if (v.fase === 'groeit') {
-    v.wiebel = 0.2;
-    geluid.nee();
-  }
+  else if (v.fase === 'groeit') teVeelWater(v);
 }
 
 // ---------- Tekenen ----------
@@ -499,7 +524,8 @@ function teken() {
         if (over > 0.4 || knipper) ctx.drawImage(plaatje('druppel'), v.x + 11, v.y - 1 + (knipper ? 0 : 1));
         balk(v, over, KLEUR.u);
       } else {
-        ctx.drawImage(plaatje(stadium(v)), sx, sy);
+        // bruin na te veel water
+        ctx.drawImage(plaatje(stadium(v), { bruin: v.teVeel > 0 }), sx, sy);
         balk(v, deel, KLEUR.l);
       }
     } else if (v.fase === 'rijp') {
@@ -577,10 +603,14 @@ canvas.addEventListener('pointerdown', (e) => {
   tik(((e.clientX - r.left) / r.width) * W, ((e.clientY - r.top) / r.height) * H);
 });
 
-// ---------- De kat op de schutting ----------
-// Loopt af en toe boven de tuin langs, nooit over het speelveld. Tik erop voor een miauw.
+// ---------- De katten op de schutting ----------
+// Twee katten (zwart-wit en cyperse) lopen om de beurt boven de tuin langs, nooit over het speelveld.
+// Elke keer doet de kat maar één ding: zitten, springen, plassen of graven naar een schat.
+// Tik op de kat voor een miauw; tik op een opgegraven schat voor extra punten.
 
-const KAT_H = 16;
+const KAT_H = 20;
+const KAT_Y = 6; // bovenkant van de kat; hij staat op de schutting
+const SCHUTTING_Y = 14;
 const kattenpad = $('kattenpad');
 const kctx = kattenpad.getContext('2d');
 kattenpad.width = W;
@@ -593,67 +623,165 @@ const schutting = (() => {
   k.fillStyle = KLEUR.l;
   k.fillRect(0, 0, W, KAT_H);
   k.fillStyle = KLEUR.b;
-  k.fillRect(0, 10, W, KAT_H - 10);
+  k.fillRect(0, SCHUTTING_Y, W, KAT_H - SCHUTTING_Y);
   k.fillStyle = KLEUR.B;
-  k.fillRect(0, 10, W, 1);
-  for (let x = 3; x < W; x += 5) k.fillRect(x, 11, 1, KAT_H - 11);
-  k.fillRect(0, 13, W, 1);
+  k.fillRect(0, SCHUTTING_Y, W, 1);
+  for (let x = 3; x < W; x += 5) k.fillRect(x, SCHUTTING_Y + 1, 1, KAT_H - SCHUTTING_Y - 1);
+  k.fillRect(0, SCHUTTING_Y + 3, W, 1);
   return c;
 })();
 
+const KAT_ACTIES = ['zit', 'spring', 'plas', 'graaf'];
+const ACTIE_DUUR = { zit: 2.5, spring: 0.7, plas: 2, graaf: 2.2 };
+const SCHAT_PUNTEN = 15;
+// om te testen: spel/?katactie=graaf laat de kat altijd graven
+const TEST_ACTIE = KAT_ACTIES.find((a) => a === new URLSearchParams(location.search).get('katactie'));
+
 function werkKatBij(dt) {
+  if (S.schat) {
+    S.schat.t += dt;
+    if (S.schat.t > 5 || S.schat.gepakt > 0.8) S.schat = null;
+    else if (S.schat.gepakt) S.schat.gepakt += dt;
+  }
+  if (S.plasje) {
+    S.plasje.t += dt;
+    if (S.plasje.t > 6) S.plasje = null;
+  }
   const kat = S.kat;
   if (!kat) {
     S.katKlok -= dt;
     if (S.katKlok <= 0) {
       const kant = Math.random() < 0.5 ? 1 : -1;
-      S.kat = { x: kant > 0 ? -12 : W, kant, fase: 'loop', t: 0, zitOp: Math.random() < 0.6 ? rnd(12, W - 24) : null };
+      // om de beurt de zwart-witte en de cyperse kat
+      S.volgendeKat = S.volgendeKat === 'zwartwit' ? 'cyperse' : 'zwartwit';
+      S.kat = {
+        soort: S.volgendeKat,
+        x: kant > 0 ? -12 : W,
+        y: 0,
+        kant,
+        fase: 'loop',
+        t: 0,
+        hartje: 0,
+        actie: TEST_ACTIE ?? kies(KAT_ACTIES),
+        actieOp: rnd(10, W - 22),
+      };
     }
     return;
   }
   kat.t += dt;
-  if (kat.fase === 'zit') {
-    if (kat.t > 2.5) Object.assign(kat, { fase: 'loop', t: 0 });
-    return;
+  kat.hartje = Math.max(0, kat.hartje - dt);
+
+  if (kat.fase === 'actie') {
+    const duur = ACTIE_DUUR[kat.actie];
+    if (kat.actie === 'spring') {
+      kat.x += kat.kant * 16 * dt;
+      kat.y = -Math.round(Math.sin(Math.min(1, kat.t / duur) * Math.PI) * 6);
+    }
+    if (kat.actie === 'graaf' && Math.random() < dt * 12) {
+      const voor = kat.x + (kat.kant > 0 ? 10 : 2);
+      S.katStof.push({ x: voor, y: SCHUTTING_Y - 1, vx: -kat.kant * rnd(4, 14), vy: rnd(-18, -8), t: 0.5 });
+    }
+    if (kat.t >= duur) {
+      if (kat.actie === 'graaf') {
+        const x = kat.x + (kat.kant > 0 ? 13 : -4);
+        S.schat = { x: Math.min(W - 6, Math.max(1, x)), soort: Math.random() < 0.5 ? 'muntje' : 'botje', t: 0, gepakt: 0 };
+        geluid.hartje();
+      }
+      Object.assign(kat, { fase: 'loop', t: 0, y: 0, actie: null });
+    }
+  } else {
+    kat.x += kat.kant * 9 * dt;
+    if (kat.actie && Math.abs(kat.x - kat.actieOp) < 0.6) {
+      Object.assign(kat, { fase: 'actie', t: 0 });
+      if (kat.actie === 'zit') geluid.miauw();
+      if (kat.actie === 'spring') geluid.zaai();
+      if (kat.actie === 'plas') S.plasje = { x: Math.round(kat.x + (kat.kant > 0 ? 2 : 9)), t: 0 };
+    }
+    if (kat.x < -14 || kat.x > W + 2) {
+      S.kat = null;
+      S.katKlok = rnd(10, 18);
+    }
   }
-  kat.x += kat.kant * 9 * dt;
-  if (kat.zitOp !== null && Math.abs(kat.x - kat.zitOp) < 0.5) {
-    Object.assign(kat, { fase: 'zit', t: 0, zitOp: null });
-    geluid.miauw();
+
+  for (const d of S.katStof) {
+    d.t -= dt;
+    d.vy += 50 * dt;
+    d.x += d.vx * dt;
+    d.y += d.vy * dt;
   }
-  if (kat.x < -14 || kat.x > W + 2) {
-    S.kat = null;
-    S.katKlok = rnd(10, 20);
+  S.katStof = S.katStof.filter((d) => d.t > 0);
+}
+
+function katHouding(kat) {
+  if (kat.fase === 'actie') {
+    if (kat.actie === 'zit') return 'zit';
+    if (kat.actie === 'plas') return 'plas';
+    if (kat.actie === 'spring') return 'loop2';
+    if (kat.actie === 'graaf') return Math.floor(kat.t * 10) % 2 ? 'graaf1' : 'graaf2';
   }
+  return Math.floor(kat.t * 6) % 2 ? 'loop2' : 'loop1';
 }
 
 function tekenKat() {
   kctx.drawImage(schutting, 0, 0);
+  if (S.plasje) {
+    // een gele druppelstraal langs de schutting en een plasje dat langzaam opdroogt
+    const p = S.plasje;
+    kctx.fillStyle = KLEUR.y;
+    const lengte = Math.min(KAT_H - SCHUTTING_Y, Math.floor(p.t * 6));
+    if (p.t < 2) kctx.fillRect(p.x, SCHUTTING_Y, 1, lengte);
+    else if (p.t < 4) kctx.fillRect(p.x, SCHUTTING_Y + 2, 1, KAT_H - SCHUTTING_Y - 2);
+  }
   const kat = S.kat;
-  if (!kat) return;
-  const naam = kat.fase === 'zit' ? 'katZit' : Math.floor(kat.t * 6) % 2 ? 'kat2' : 'kat1';
-  kctx.save();
-  kctx.translate(Math.round(kat.x) + (kat.kant < 0 ? 12 : 0), 2);
-  if (kat.kant < 0) kctx.scale(-1, 1);
-  kctx.drawImage(plaatje(naam), 0, 0);
-  kctx.restore();
-  if (kat.hartje > 0) {
-    kctx.fillStyle = KLEUR.p;
-    const y = Math.round(kat.hartje * 3);
-    kctx.fillRect(Math.round(kat.x) + 5, y, 1, 1);
-    kctx.fillRect(Math.round(kat.x) + 7, y, 1, 1);
-    kctx.fillRect(Math.round(kat.x) + 6, y + 1, 1, 1);
+  if (kat) {
+    kctx.save();
+    kctx.translate(Math.round(kat.x) + (kat.kant < 0 ? 12 : 0), KAT_Y + kat.y);
+    if (kat.kant < 0) kctx.scale(-1, 1);
+    kctx.drawImage(katPlaatje(kat.soort, katHouding(kat)), 0, 0);
+    kctx.restore();
+    if (kat.hartje > 0) {
+      kctx.fillStyle = KLEUR.p;
+      const x = Math.round(kat.x) + 5;
+      const y = Math.round(kat.hartje * 4);
+      kctx.fillRect(x, y, 1, 1);
+      kctx.fillRect(x + 2, y, 1, 1);
+      kctx.fillRect(x + 1, y + 1, 1, 1);
+    }
+  }
+  for (const d of S.katStof) {
+    kctx.fillStyle = KLEUR.B;
+    kctx.fillRect(Math.round(d.x), Math.round(d.y), 1, 1);
+  }
+  if (S.schat) {
+    const s = S.schat;
+    const y = Math.round(Math.max(1, SCHUTTING_Y - 6 - s.t * 8)) - (s.gepakt ? Math.round(s.gepakt * 8) : 0);
+    if (s.gepakt) tekenTekst(kctx, `+${SCHAT_PUNTEN}`, s.x + 3, Math.max(1, y), KLEUR.y);
+    else if (s.t < 4 || Math.floor(s.t * 8) % 2) {
+      kctx.drawImage(plaatje(s.soort), s.x, y);
+      if (Math.floor(s.t * 4) % 2) {
+        kctx.fillStyle = KLEUR.w;
+        kctx.fillRect(s.x + 5, y - 1, 1, 1);
+      }
+    }
   }
 }
 
 kattenpad.addEventListener('pointerdown', (e) => {
   e.preventDefault();
-  const kat = S?.kat;
-  if (toestand !== 'spelen' || !kat) return;
+  if (toestand !== 'spelen') return;
   const r = kattenpad.getBoundingClientRect();
   const x = ((e.clientX - r.left) / r.width) * W;
-  if (Math.abs(x - (kat.x + 6)) < 10) {
-    geluid.wakker();
+  geluid.wakker();
+  const s = S.schat;
+  if (s && !s.gepakt && Math.abs(x - (s.x + 3)) < 8) {
+    s.gepakt = 0.01;
+    geluid.oogst(3);
+    trilling(10);
+    punt(SCHAT_PUNTEN);
+    return;
+  }
+  const kat = S.kat;
+  if (kat && Math.abs(x - (kat.x + 6)) < 10) {
     geluid.miauw();
     kat.hartje = 1;
   }
@@ -665,7 +793,6 @@ function lus(nu) {
   vorige = nu;
   if (toestand === 'spelen') {
     werkBij(dt);
-    if (S.kat?.hartje > 0) S.kat.hartje = Math.max(0, S.kat.hartje - dt);
     werkKatBij(dt);
   }
   if (S) {
