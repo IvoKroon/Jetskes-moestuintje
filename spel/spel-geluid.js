@@ -48,6 +48,7 @@ export const geluid = {
     const k = 2 ** ((Math.min(combo, 5) - 1) * 2 / 12);
     reeks([880 * k, 660 * k, 990 * k], 0.04, { type: 'triangle', vol: 0.06 });
   },
+  miauw: () => toon(700, 0.35, { type: 'triangle', naar: 450, vol: 0.05 }),
   opruimen: () => toon(140, 0.08, { type: 'triangle', naar: 90, vol: 0.08 }),
   nee: () => toon(110, 0.05, { type: 'triangle', vol: 0.06 }),
   au: () => toon(330, 0.35, { type: 'triangle', naar: 90, vol: 0.12 }),

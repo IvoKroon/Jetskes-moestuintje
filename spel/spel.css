@@ -28,6 +28,11 @@ body.speelt #spel { bottom: env(safe-area-inset-bottom); }
 #score { font-size: 20px; line-height: 1.2; text-shadow: 3px 3px 0 var(--inkt); }
 .hartjes { flex: 1; display: flex; gap: 4px; justify-content: center; }
 .hartjes img { width: 28px; height: 28px; }
+@media (max-width: 360px) {
+  .hartjes { gap: 2px; }
+  .hartjes img { width: 20px; height: 20px; }
+  .score { min-width: 72px; }
+}
 .hartjes img.leeg { filter: grayscale(1) brightness(0.6); opacity: 0.5; }
 .knop.klein { min-height: 40px; min-width: 44px; padding: 8px 10px; font-size: 12px; }
 
@@ -38,6 +43,13 @@ body.speelt #spel { bottom: env(safe-area-inset-bottom); }
   display: flex;
   align-items: center;
   justify-content: center;
+}
+#tuin { display: flex; flex-direction: column; align-items: center; }
+#kattenpad {
+  display: block;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  touch-action: none;
 }
 #bord {
   position: relative;
@@ -55,13 +67,12 @@ body.speelt #spel { bottom: env(safe-area-inset-bottom); }
   cursor: pointer;
 }
 
+/* Meldingen staan onder het speelveld, zodat ze de tuin niet bedekken */
+.melding-rij { height: 64px; padding-top: 10px; display: flex; align-items: flex-start; justify-content: center; }
 .melding {
-  position: absolute;
-  left: 50%;
-  top: 8px;
-  transform: translate(-50%, -8px);
+  transform: translateY(8px);
   width: max-content;
-  max-width: 92%;
+  max-width: 100%;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -75,8 +86,9 @@ body.speelt #spel { bottom: env(safe-area-inset-bottom); }
   pointer-events: none;
   transition: opacity 0.15s steps(2), transform 0.15s steps(2);
 }
-.melding.zichtbaar { opacity: 1; transform: translate(-50%, 0); }
+.melding.zichtbaar { opacity: 1; transform: none; }
 .melding img { width: 24px; height: 24px; flex: none; }
+.melding span { min-width: 0; }
 
 .scherm {
   position: absolute;
