@@ -30,7 +30,7 @@ const BEESTJES = {
 };
 
 // Zaaien en oogsten gaan vanzelf; de speler geeft water en jaagt beestjes weg.
-const DORST_TIJD = 8; // zo lang kan een plantje zonder water
+const DORST_TIJD = 6; // zo lang kan een plantje zonder water
 const SNEL_WATER = 1; // binnen zoveel seconden water geven = extra punten
 // zo lang blijft een vakje leeg voordat er vanzelf gezaaid wordt: rustig in level 1, daarna sneller
 const zaaiPauze = (level) => Math.max(1, 4 - 0.6 * (level - 1));
@@ -116,7 +116,7 @@ const moeilijk = () => {
     beestjeTussen: Math.max(2, 10 - 0.8 * l),
     maxBeestjes: Math.min(1 + Math.floor(l / 2), 5),
     snel: 1 + 0.04 * l,
-    eet: Math.max(0.6, 1.4 - 0.07 * l),
+    eet: Math.max(0.5, 0.85 - 0.05 * l),
     dorstTijd: Math.max(3.5, DORST_TIJD - 0.4 * l),
   };
 };
@@ -133,10 +133,11 @@ function zaai(v) {
   const naam = kies(lijst);
   const g = GEWASSEN[naam];
   const groei = g.groei * m.groei * rnd(0.85, 1.15);
-  // elk plantje heeft minstens één keer dorst; trage gewassen en hogere levels vaker
-  let keren = S.level >= 2 && g.groei > 5.5 ? 2 : 1;
-  if (S.level >= 4 && Math.random() < 0.5) keren++;
-  const dorsten = Array.from({ length: keren }, (_, k) => (k + 1) / (keren + 1) + rnd(-0.1, 0.1));
+  // elk plantje heeft al vroeg dorst en daarna nog eens; trage gewassen en hogere levels vaker
+  let keren = g.groei > 5.5 ? 3 : 2;
+  if (S.level >= 3 && Math.random() < 0.5) keren++;
+  const eerste = rnd(0.08, 0.2);
+  const dorsten = Array.from({ length: keren }, (_, k) => eerste + (k * (0.85 - eerste)) / (keren - 1) + (k ? rnd(-0.05, 0.05) : 0));
   Object.assign(v, { fase: 'groeit', gewas: naam, t: 0, groei, rijp: g.rijp * m.rijp, dorsten, perfect: true, dorstig: false, dorstT: 0, verwelkt: null });
   stof(v.x + 8, v.y + 12, KLEUR.b, 3);
   geluid.zaai();
