@@ -4,6 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
     <meta name="theme-color" content="#3e8948" />
+    <link rel="manifest" href="../manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="../apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Moestuintje" />
     <title>Tuinieren · Jetskes moestuintje</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -40,7 +45,7 @@
               <li><img data-sprite="tomaat" class="sprite" alt="" />Rijp? Tik om te oogsten voordat het rot. Snel = meer punten</li>
               <li><img data-sprite="luis" class="sprite" alt="" />Tik luizen en slakken weg voordat ze alles opeten</li>
               <li><img data-sprite="lieveheersbeestje" class="sprite" alt="" />Lieveheersbeestjes zijn vriendjes: niet tikken!</li>
-              <li><img data-sprite="muntje" class="sprite" alt="" />Je oogst verkoop je op de markt (via Thuis). Spaar voor de bakkerij en voor de katten Dexter en Willem</li>
+              <li><img data-sprite="muntje" class="sprite" alt="" />Je oogst verkoop je op de Markt (in het menu). Spaar voor de bakkerij en voor de katten Dexter en Willem</li>
             </ul>
             <button id="startKnop" class="knop groen breed">Start</button>
             <div class="records" hidden>
@@ -75,6 +80,7 @@
               <p id="naamMelding" class="naam-melding" role="status"></p>
             </form>
             <button id="opnieuwKnop" class="knop groen breed">Nog een keer</button>
+            <a id="marktKnop" class="knop breed" href="../markt/"><img data-sprite="muntje" class="sprite" alt="" />Verkoop je oogst</a>
             <div class="records online" id="onlineRecords" hidden>
               <h3>Top 10 online</h3>
               <ol id="onlineScores"></ol>
@@ -88,11 +94,8 @@
       </main>
     </div>
 
-    <nav class="menu" aria-label="Menu">
-      <a href="../">Thuis</a>
-      <a href="./" class="actief">Tuinieren</a>
-      <a href="../planner/">Moestuin</a>
-    </nav>
+    <nav class="menu" aria-label="Menu" data-actief="spel" data-root="../"></nav>
+    <script type="module" src="../shared/menu.js"></script>
     <script type="module" src="./spel.js"></script>
   </body>
 </html>

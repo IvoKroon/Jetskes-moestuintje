@@ -1,7 +1,7 @@
 /* Stijl van de markt. Kleuren, kaders en knoppen komen uit shared/style.css. */
 
 body { background: var(--gras-donker); }
-#app { display: grid; gap: 16px; align-content: start; }
+#app { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-content: start; }
 
 .markt-kop { text-align: center; color: var(--papier); padding-top: env(safe-area-inset-top); }
 .markt-kop h1 { text-shadow: 3px 3px 0 var(--inkt); margin: 8px 0; }

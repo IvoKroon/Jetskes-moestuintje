@@ -36,8 +36,8 @@ function render(root) {
 
   const tuin = el('a', 'knop breed');
   tuin.href = './planner/';
-  const tuinTekst = el('span', '', 'Plan je moestuintje');
-  tuinTekst.append(el('small', '', 'Teken je tuin en houd bij wat je doet'));
+  const tuinTekst = el('span', '', 'Moestuin');
+  tuinTekst.append(el('small', '', 'Plan je moestuintje en houd bij wat je doet'));
   tuin.append(sprite('kiemplant', { grootte: 40 }), tuinTekst);
 
   const markt = el('a', 'knop oranje breed');
@@ -75,7 +75,11 @@ function render(root) {
     online.hidden = false;
   });
 
-  root.append(kop, begroeting, keuzes, weetjes, online);
+  root.replaceChildren(kop, begroeting, keuzes, weetjes, online);
 }
 
-render(document.getElementById('app'));
+const app = document.getElementById('app');
+render(app);
+// Terug met de terugknop (pagina uit het geheugen van de browser): opnieuw tekenen,
+// anders staat de bakkerij nog op slot terwijl ze hem net gekocht heeft.
+addEventListener('pageshow', (e) => e.persisted && render(app));

@@ -4,12 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#3e8948" />
-    <link rel="manifest" href="./manifest.webmanifest" />
-    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+    <link rel="manifest" href="../manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="../apple-touch-icon.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-title" content="Moestuin" />
-    <title>Plan je moestuintje</title>
+    <meta name="apple-mobile-web-app-title" content="Moestuintje" />
+    <title>Moestuin · Jetskes moestuintje</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Nunito:wght@500;700;800&display=swap" rel="stylesheet" />
@@ -19,7 +19,7 @@
   <body class="ontwerper-pagina">
     <div class="ontwerper">
       <header class="balk-boven">
-        <h1>Mijn moestuin</h1>
+        <h1>Moestuin</h1>
         <div class="knoppen-klein">
           <button class="mini" id="terug" type="button" aria-label="Stap terug" title="Stap terug">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3" /></svg>
@@ -106,11 +106,8 @@
       <div class="blad-inhoud" id="blad-inhoud"></div>
     </section>
 
-    <nav class="menu" aria-label="Menu">
-      <a href="../">Thuis</a>
-      <a href="../spel/">Tuinieren</a>
-      <a href="./" class="actief">Moestuin</a>
-    </nav>
+    <nav class="menu" aria-label="Menu" data-actief="planner" data-root="../"></nav>
+    <script type="module" src="../shared/menu.js"></script>
     <script type="module" src="./planner.js"></script>
   </body>
 </html>

@@ -1,7 +1,7 @@
 {
   "name": "Jetskes moestuintje",
-  "short_name": "Moestuin",
-  "description": "Plan je moestuin: bakken, paden en planten op de plattegrond.",
+  "short_name": "Moestuintje",
+  "description": "Tuinieren, de markt, de bakkerij en je moestuinplanner.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

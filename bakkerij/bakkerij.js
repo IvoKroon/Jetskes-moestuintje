@@ -31,7 +31,7 @@ function tekenDicht() {
   const tekort = BAKKERIJ_PRIJS - munten();
   $('dichtTekst').textContent = tekort > 0
     ? `De bakkerij is nog dicht. Voor ${BAKKERIJ_PRIJS} munten is hij van jou. Je mist nog ${tekort} munten: verkoop je oogst op de markt!`
-    : `De bakkerij is nog dicht. Voor ${BAKKERIJ_PRIJS} munten is hij van jou en bak je taarten van je oogst.`;
+    : `De bakkerij is nog dicht. Voor ${BAKKERIJ_PRIJS} munten is hij van jou en bak je lekkers van je oogst.`;
   $('dichtBalk').style.width = `${Math.min(munten() / BAKKERIJ_PRIJS, 1) * 100}%`;
   const knop = $('koopBakkerij');
   knop.replaceChildren(img('muntje'), `Koop voor ${BAKKERIJ_PRIJS}`);
