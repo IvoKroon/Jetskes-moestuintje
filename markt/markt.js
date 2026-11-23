@@ -35,7 +35,7 @@ function toonKraam() {
   const soorten = Object.keys(PRIJZEN).filter((g) => v[g] > 0 && NAMEN[g]);
   if (!soorten.length) {
     const li = el('li', 'leeg');
-    li.append(img(plaatjeUrl('kiemplant')), el('span', '', 'Nog niks te verkopen. Ga oogsten in het spel!'));
+    li.append(img(plaatjeUrl('kiemplant')), el('span', '', 'Nog niks te verkopen. Ga oogsten bij Tuinieren!'));
     lijst.append(li);
   }
   for (const g of soorten) {
@@ -64,9 +64,9 @@ function toonKatten() {
   const lijst = $('katten');
   lijst.replaceChildren();
   const eigen = eigenKatten();
-  const prijs = katPrijs();
   for (const [soort, info] of Object.entries(KATTEN)) {
     const heeft = eigen.includes(soort);
+    const prijs = katPrijs(soort);
     const li = el('li', heeft ? 'van-jou' : '');
     const foto = img(katPlaatje(soort, heeft ? 'zit' : 'loop1').toDataURL(), `sprite kat${heeft ? '' : ' op-slot'}`);
     const wie = el('div', 'wie');
@@ -98,7 +98,7 @@ function toonBakkerij() {
   if (heeftBakkerij()) {
     const a = el('a', 'knop breed');
     a.href = '../bakkerij/';
-    a.append(img(plaatjeUrl('aardbeientaart')), 'Naar de bakkerij');
+    a.append(img(plaatjeUrl('brood')), 'Naar de bakkerij');
     plek.append(a);
     return;
   }
@@ -106,7 +106,7 @@ function toonBakkerij() {
   const blok = el('div', 'kader slot');
   const rij = el('div', 'slot-rij');
   const wat = el('div', 'wat');
-  wat.append(el('strong', '', 'Bakkerij op slot'), el('small', '', kan ? 'Open hem en bak taarten van je oogst.' : `Spaar ${BAKKERIJ_PRIJS} munten om hem te openen.`));
+  wat.append(el('strong', '', 'Bakkerij op slot'), el('small', '', kan ? 'Open hem en bak lekkers van je oogst.' : `Spaar ${BAKKERIJ_PRIJS} munten om hem te openen.`));
   const knop = el('button', `knop klein${kan ? ' groen' : ''}`);
   knop.append(img(plaatjeUrl('muntje')), `${BAKKERIJ_PRIJS}`);
   knop.disabled = !kan;

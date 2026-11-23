@@ -94,13 +94,22 @@ p { margin: 0 0 12px; }
 }
 .menu a {
   flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--papier);
   text-decoration: none;
-  font-size: 11px;
+  /* Altijd het pixellettertype, ook in de planner (die heeft zelf een ander lettertype) */
+  font-family: var(--font);
+  font-size: 10px;
+  line-height: 1.4;
+  -webkit-font-smoothing: none;
+  white-space: nowrap;
 }
+/* Vier knoppen: op een smalle telefoon (oude iPhone SE) iets kleinere letters zodat Tuinieren past */
+@media (max-width: 400px) { .menu a { font-size: 9px; } }
+@media (max-width: 350px) { .menu a { font-size: 8px; } }
 .menu a.actief { background: var(--grond); color: var(--geel); }
 
 /* Homepage */

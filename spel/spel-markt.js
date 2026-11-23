@@ -37,8 +37,8 @@ export const KATTEN = {
   zwartwit: { naam: 'Willem', tekst: 'Zwart-witte kat met een aureooltje. Een echte engel.' },
 };
 
-// De katten zijn een flinke spaardoel: de eerste na een tijdje, de tweede kost veel meer.
-const KAT_PRIJZEN = [100, 250];
+// De katten zijn een flink spaardoel, elk met een vaste prijs: Dexter eerst, Willem kost veel meer.
+const KAT_PRIJZEN = { cyperse: 100, zwartwit: 250 };
 
 // De bakkerij moet je eerst kopen voordat je er taarten kunt bakken.
 export const BAKKERIJ_PRIJS = 50;
@@ -47,7 +47,7 @@ export const voorraad = () => lees('spel.voorraad', {}) ?? {};
 export const munten = () => lees('spel.munten', 0) ?? 0;
 export const eigenKatten = () => (lees('spel.katten', []) ?? []).filter((k) => KATTEN[k]);
 export const heeftBakkerij = () => lees('spel.bakkerij', false) === true;
-export const katPrijs = () => KAT_PRIJZEN[Math.min(eigenKatten().length, KAT_PRIJZEN.length - 1)];
+export const katPrijs = (soort) => KAT_PRIJZEN[soort];
 
 /** Na elke oogst: één stuk erbij in de voorraad. */
 export function bewaarOogst(gewas) {
@@ -92,8 +92,8 @@ export function koopBakkerij() {
 }
 
 export function koopKat(soort) {
-  const prijs = katPrijs();
-  if (eigenKatten().includes(soort) || munten() < prijs) return false;
+  const prijs = katPrijs(soort);
+  if (!prijs || eigenKatten().includes(soort) || munten() < prijs) return false;
   bewaar('spel.munten', munten() - prijs);
   bewaar('spel.katten', [...eigenKatten(), soort]);
   return true;

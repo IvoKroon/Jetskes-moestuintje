@@ -103,6 +103,7 @@ body.speelt #spel { bottom: env(safe-area-inset-bottom); }
 .scherm[hidden] { display: none; }
 .scherm .kader { width: 100%; max-width: 380px; text-align: center; max-height: 100%; overflow-y: auto; }
 .scherm .knop + .knop { margin-top: 12px; }
+.scherm .knop img { width: 24px; height: 24px; }
 .scherm h1 { color: var(--gras-donker); }
 
 .uitleg, .oogst { list-style: none; padding: 0; margin: 0 0 16px; text-align: left; font-size: 10px; }
