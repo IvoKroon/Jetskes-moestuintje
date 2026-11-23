@@ -18,11 +18,12 @@ const H = MARGE * 2 + RIJEN * VAK + (RIJEN - 1) * TUSSEN; // 60
 
 // groeitijd en hoelang hij rijp blijft, in seconden
 const GEWASSEN = {
-  // graan komt het vaakst, groeit snel en is weinig waard
+  // graan is de basis: je begint ermee, het komt het vaakst, groeit snel en is weinig waard.
+  // De andere gewassen komen er pas bij als je wat punten hebt.
   graan: { naam: 'Graan', meer: 'graan', groei: 2.2, rijp: 3.5, punten: 5, vanaf: 0, kans: 8, kleur: KLEUR.y },
-  radijs: { naam: 'Radijs', meer: 'radijsjes', groei: 3, rijp: 3.2, punten: 10, vanaf: 0, kans: 3, kleur: KLEUR.r },
-  wortel: { naam: 'Wortel', meer: 'wortels', groei: 4.5, rijp: 3.6, punten: 20, vanaf: 0, kans: 3, kleur: KLEUR.o },
-  tomaat: { naam: 'Tomaat', meer: 'tomaten', groei: 6, rijp: 4, punten: 35, vanaf: 200, kans: 2, kleur: KLEUR.r },
+  radijs: { naam: 'Radijs', meer: 'radijsjes', groei: 3, rijp: 3.2, punten: 10, vanaf: 40, kans: 3, kleur: KLEUR.r },
+  wortel: { naam: 'Wortel', meer: 'wortels', groei: 4.5, rijp: 3.6, punten: 20, vanaf: 100, kans: 3, kleur: KLEUR.o },
+  tomaat: { naam: 'Tomaat', meer: 'tomaten', groei: 6, rijp: 4, punten: 35, vanaf: 250, kans: 2, kleur: KLEUR.r },
   aardbei: { naam: 'Aardbei', meer: 'aardbeien', groei: 5, rijp: 2.6, punten: 45, vanaf: 600, kans: 2, kleur: KLEUR.r },
   pompoen: { naam: 'Pompoen', meer: 'pompoenen', groei: 9, rijp: 5, punten: 90, vanaf: 1200, kans: 1, kleur: KLEUR.o },
 };
