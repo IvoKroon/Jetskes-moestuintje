@@ -17,14 +17,14 @@ export const GEWAS_NAMEN = {
 // Muntjes per stuk groente of fruit
 const GROENTE_PRIJZEN = { radijs: 1, wortel: 2, tomaat: 3, aardbei: 4, pompoen: 8 };
 
-// De bakkerij: van een paar producten bak je een taart die meer oplevert dan de losse producten.
+// De bakkerij: graan is de basis van alles; met wat oogst erbij bak je iets dat meer oplevert dan de losse producten.
 export const RECEPTEN = {
   brood: { naam: 'Brood', meer: 'broden', nodig: { graan: 4 }, prijs: 8 },
-  vlaai: { naam: 'Vlaai', meer: 'vlaaien', nodig: { aardbei: 5 }, prijs: 30 },
-  wortelcake: { naam: 'Wortelcake', meer: 'wortelcakes', nodig: { wortel: 3 }, prijs: 12 },
-  tomatenquiche: { naam: 'Tomatenquiche', meer: 'tomatenquiches', nodig: { tomaat: 2, radijs: 2 }, prijs: 15 },
-  aardbeientaart: { naam: 'Aardbeientaart', meer: 'aardbeientaarten', nodig: { aardbei: 3 }, prijs: 20 },
-  pompoentaart: { naam: 'Pompoentaart', meer: 'pompoentaarten', nodig: { pompoen: 1, wortel: 2 }, prijs: 22 },
+  vlaai: { naam: 'Vlaai', meer: 'vlaaien', nodig: { graan: 2, aardbei: 5 }, prijs: 32 },
+  wortelcake: { naam: 'Wortelcake', meer: 'wortelcakes', nodig: { graan: 2, wortel: 3 }, prijs: 14 },
+  tomatenquiche: { naam: 'Tomatenquiche', meer: 'tomatenquiches', nodig: { graan: 2, tomaat: 2, radijs: 2 }, prijs: 18 },
+  aardbeientaart: { naam: 'Aardbeientaart', meer: 'aardbeientaarten', nodig: { graan: 2, aardbei: 3 }, prijs: 22 },
+  pompoentaart: { naam: 'Pompoentaart', meer: 'pompoentaarten', nodig: { graan: 2, pompoen: 1, wortel: 2 }, prijs: 24 },
 };
 
 export const PRIJZEN = {
