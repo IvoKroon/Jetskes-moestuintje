@@ -7,6 +7,7 @@ import { plaatjeUrl } from './spel-sprites.js';
 
 /** Namen per gewas voor de tekstjes: één radijs, twee radijsjes. */
 export const GEWAS_NAMEN = {
+  graan: { naam: 'Graan', meer: 'graan' },
   radijs: { naam: 'Radijs', meer: 'radijsjes' },
   wortel: { naam: 'Wortel', meer: 'wortels' },
   tomaat: { naam: 'Tomaat', meer: 'tomaten' },
@@ -15,7 +16,8 @@ export const GEWAS_NAMEN = {
 };
 
 // Muntjes per stuk groente of fruit
-const GROENTE_PRIJZEN = { radijs: 1, wortel: 2, tomaat: 3, aardbei: 4, pompoen: 8 };
+// Graan is het goedkoopst: er groeit veel van.
+const GROENTE_PRIJZEN = { graan: 1, radijs: 2, wortel: 2, tomaat: 3, aardbei: 4, pompoen: 8 };
 
 // De bakkerij: graan is de basis van alles; met wat oogst erbij bak je iets dat meer oplevert dan de losse producten.
 export const RECEPTEN = {
