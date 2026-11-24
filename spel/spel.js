@@ -5,6 +5,8 @@ import { geluid } from './spel-geluid.js';
 import { bewaarOogst, eigenKatten, KATTEN, GEWAS_NAMEN } from './spel-markt.js';
 import { FRENZY, maakFrenzy, werkFrenzyBij, tekenFrenzy, pluk, plukOver } from './spel-frenzy.js';
 import { WEER_SOORTEN, maakWeer, wisselWeer, werkWeerBij, slaInBij, windKracht, tekenWeerVeld, tekenLucht } from './spel-weer.js';
+import { maakLucht, werkVogelsBij, tekenVogels } from './spel-vogel.js';
+import { maakMol, werkMolBij, tekenMol, tikMol } from './spel-mol.js';
 import { haalTop, stuurScore, vulLijst, laatsteNaam, bewaarNaam } from '../shared/highscore.js';
 
 // ---------- Instellingen ----------
@@ -12,11 +14,11 @@ import { haalTop, stuurScore, vulLijst, laatsteNaam, bewaarNaam } from '../share
 // Het veld in 'echte' pixels; de browser vergroot het scherp.
 const VAK = 16;
 const TUSSEN = 2;
-const MARGE = 4;
+const MARGE = 8; // de grasrand rond de vakjes; breed genoeg voor de mol
 const KOLOMMEN = 3;
 const RIJEN = 3;
-const W = MARGE * 2 + KOLOMMEN * VAK + (KOLOMMEN - 1) * TUSSEN; // 60
-const H = MARGE * 2 + RIJEN * VAK + (RIJEN - 1) * TUSSEN; // 60
+const W = MARGE * 2 + KOLOMMEN * VAK + (KOLOMMEN - 1) * TUSSEN; // 68
+const H = MARGE * 2 + RIJEN * VAK + (RIJEN - 1) * TUSSEN; // 68
 
 // groeitijd en hoelang hij rijp blijft, in seconden
 const GEWASSEN = {
@@ -37,7 +39,13 @@ const BEESTJES = {
 };
 
 // Zaaien en oogsten gaan vanzelf; de speler geeft water en jaagt beestjes weg.
-const DORST_TIJD = 6; // zo lang kan een plantje zonder water
+// Water: hoe snel een plantje dorst krijgt en hoe snel hij daarna uitdroogt.
+const DORST_TIJD = 4; // zo lang kan een plantje zonder water in level 1 (was 6)
+const DORST_MIN = 2.5; // korter wordt het nooit, ook niet in hoge levels (was 3.5)
+const DORST_PER_LEVEL = 0.3; // per level zoveel seconden korter (was 0.4)
+const EERSTE_DORST = [0.03, 0.12]; // eerste dorst na dit deel van de groei (was 0.08 tot 0.2)
+const DORST_KEREN = 3; // zo vaak dorst per plantje (was 2)
+const DORST_KEREN_TRAAG = 4; // voor trage gewassen zoals tomaat en pompoen (was 3)
 const SNEL_WATER = 1; // binnen zoveel seconden water geven = extra punten
 // zo lang blijft een vakje leeg voordat er vanzelf gezaaid wordt: rustig in level 1, daarna sneller
 const zaaiPauze = (level) => Math.max(1, 4 - 0.6 * (level - 1));
@@ -83,6 +91,18 @@ const WEER_MELDING = {
   regen: 'Het regent! Je plantjes krijgen vanzelf water',
   storm: 'Storm! Oogst snel, de bliksem kan inslaan',
 };
+// De mol: komt af en toe even uit een molshoop in het gras kijken. Alleen voor de gezelligheid,
+// geen punten en geen straf. Tijdens de vlierbes frenzy blijft hij onder de grond.
+// Om de mol te testen: spel/?mol=1 laat hem na 2 seconden komen, en daarna om de paar seconden.
+const TEST_MOL = new URLSearchParams(location.search).get('mol') === '1';
+const MOL_EERSTE = TEST_MOL ? [2, 2] : [15, 25]; // seconden spelen tot de eerste mol (tussen ... en ...)
+const MOL_TUSSEN = TEST_MOL ? [3, 5] : [20, 40]; // daarna weer na zoveel seconden
+// Waar een molshoop mag komen: alleen in de grasrand rondom de vakjes, nooit op het veld zelf.
+// (x, y) is het gat; de mol is 7 breed en steekt 7 pixels boven het gat uit.
+const MOL_PLEKKEN = [
+  ...[6, 18, 34, 50, 62].map((x) => ({ x, y: H - 1 })), // onderrand
+  ...[18, 36, 54].flatMap((y) => [{ x: 3, y }, { x: W - 4, y }]), // linker- en rechterrand
+];
 
 // ---------- Elementen ----------
 
@@ -156,11 +176,13 @@ function nieuwSpel() {
     volgendeFrenzy: FRENZY_NA, // op deze speeltijd (S.tijd) begint de volgende
     frenzyTijd: 0, // tijd in frenzy's; S.tijd staat dan stil
     plukCombo: 0,
+    lucht: maakLucht(), // vogeltjes die af en toe overvliegen (spel-vogel.js)
     laatstePluk: -9,
     weer: maakWeer(TEST_WEER ?? 'zon', W, KAT_H),
     weerKlok: TEST_WEER ? Infinity : WEER.eersteZon, // over zoveel seconden wisselt het weer
     bliksemKlok: 2,
     bliksemUitgelegd: false,
+    mol: maakMol(MOL_PLEKKEN, { eerste: MOL_EERSTE, tussen: MOL_TUSSEN }),
   };
 }
 
@@ -175,7 +197,7 @@ const moeilijk = () => {
     maxBeestjes: Math.min(2 + Math.floor(l / 2), 6),
     snel: 1.1 + 0.06 * l,
     eet: Math.max(0.5, 0.85 - 0.05 * l),
-    dorstTijd: Math.max(3.5, DORST_TIJD - 0.4 * l),
+    dorstTijd: Math.max(DORST_MIN, DORST_TIJD - DORST_PER_LEVEL * l),
   };
 };
 
@@ -192,9 +214,9 @@ function zaai(v) {
   const g = GEWASSEN[naam];
   const groei = g.groei * m.groei * rnd(0.85, 1.15);
   // elk plantje heeft al vroeg dorst en daarna nog eens; trage gewassen en hogere levels vaker
-  let keren = g.groei > 5.5 ? 3 : 2;
+  let keren = g.groei > 5.5 ? DORST_KEREN_TRAAG : DORST_KEREN;
   if (S.level >= 3 && Math.random() < 0.5) keren++;
-  const eerste = rnd(0.08, 0.2);
+  const eerste = rnd(...EERSTE_DORST);
   const dorsten = Array.from({ length: keren }, (_, k) => eerste + (k * (0.85 - eerste)) / (keren - 1) + (k ? rnd(-0.05, 0.05) : 0));
   Object.assign(v, { fase: 'groeit', gewas: naam, t: 0, groei, rijp: g.rijp * m.rijp, dorsten, perfect: true, dorstig: false, dorstT: 0, verwelkt: null, teVeel: 0, laatsteWater: -9 });
   stof(v.x + 8, v.y + 12, KLEUR.b, 3);
@@ -546,6 +568,8 @@ function tik(x, y) {
   );
   if (raak?.soort === 'lieveheersbeestje' && plaag) raak = plaag;
   if (raak) return raakBeestje(raak);
+  // de mol schrikt van een tik, maar alleen als je niet op een vakje tikt
+  if (!S.vakken.some((v) => x >= v.x && x < v.x + VAK && y >= v.y && y < v.y + VAK) && tikMol(S.mol, x, y)) return geluid.weg();
 
   const v = S.vakken.find((v) => x >= v.x - 1 && x < v.x + VAK + 1 && y >= v.y - 1 && y < v.y + VAK + 1);
   if (!v) return;
@@ -611,6 +635,8 @@ function teken() {
       ctx.fillRect(Math.round(v.x + 8 + Math.cos(a) * 5), Math.round(v.y + 4 + Math.sin(a * 1.3) * 2), 1, 1);
     }
   }
+
+  if (!S.frenzy) tekenMol(ctx, S.mol);
 
   for (const b of S.beestjes) {
     const img = plaatje(b.soort);
@@ -944,6 +970,7 @@ function tekenKat() {
     if (p.t < 2) kctx.fillRect(p.x, SCHUTTING_Y, 1, lengte);
     else if (p.t < 4) kctx.fillRect(p.x, SCHUTTING_Y + 2, 1, KAT_H - SCHUTTING_Y - 2);
   }
+  tekenVogels(kctx, S.lucht, KLEUR); // achter de kat langs
   const kat = S.kat;
   if (kat) {
     kctx.save();
@@ -1008,6 +1035,8 @@ function lus(nu) {
     else {
       werkBij(dt);
       werkKatBij(dt);
+      werkVogelsBij(S.lucht, dt, W, S.weer.nu !== 'storm'); // bij storm vliegen er geen vogels
+      werkMolBij(S.mol, dt);
       if (toestand === 'spelen' && S.tijd >= S.volgendeFrenzy) startFrenzy();
     }
   }
