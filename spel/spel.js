@@ -4,6 +4,7 @@ import { plaatje, plaatjeUrl, katPlaatje, maakGrond, maakGras, tekenTekst, KLEUR
 import { geluid } from './spel-geluid.js';
 import { bewaarOogst, eigenKatten, KATTEN, GEWAS_NAMEN } from './spel-markt.js';
 import { FRENZY, maakFrenzy, werkFrenzyBij, tekenFrenzy, pluk, plukOver } from './spel-frenzy.js';
+import { maakLucht, werkVogelsBij, tekenVogels } from './spel-vogel.js';
 import { maakMol, werkMolBij, tekenMol, tikMol } from './spel-mol.js';
 import { haalTop, stuurScore, vulLijst, laatsteNaam, bewaarNaam } from '../shared/highscore.js';
 
@@ -148,6 +149,7 @@ function nieuwSpel() {
     volgendeFrenzy: FRENZY_NA, // op deze speeltijd (S.tijd) begint de volgende
     frenzyTijd: 0, // tijd in frenzy's; S.tijd staat dan stil
     plukCombo: 0,
+    lucht: maakLucht(), // vogeltjes die af en toe overvliegen (spel-vogel.js)
     laatstePluk: -9,
     mol: maakMol(MOL_PLEKKEN, { eerste: MOL_EERSTE, tussen: MOL_TUSSEN }),
   };
@@ -852,6 +854,7 @@ function tekenKat() {
     if (p.t < 2) kctx.fillRect(p.x, SCHUTTING_Y, 1, lengte);
     else if (p.t < 4) kctx.fillRect(p.x, SCHUTTING_Y + 2, 1, KAT_H - SCHUTTING_Y - 2);
   }
+  tekenVogels(kctx, S.lucht, KLEUR); // achter de kat langs
   const kat = S.kat;
   if (kat) {
     kctx.save();
@@ -916,6 +919,7 @@ function lus(nu) {
     else {
       werkBij(dt);
       werkKatBij(dt);
+      werkVogelsBij(S.lucht, dt, W);
       werkMolBij(S.mol, dt);
       if (toestand === 'spelen' && S.tijd >= S.volgendeFrenzy) startFrenzy();
     }
