@@ -29,6 +29,8 @@ export const KLEUR = {
   X: '#5c4a30', // donker rot
   v: '#8b8b3a', // verwelkt blad
   V: '#5c5c26',
+  P: '#5e2f80', // vlierbes
+  q: '#b787dc', // lichtpaars glimmertje
 };
 
 // Hoe een rijpe groente verkleurt als hij rot.
@@ -143,6 +145,32 @@ Object.assign(EIGEN, {
     '.kaaaaaak.',
     '..kkkkkk..',
     '..........',
+  ],
+    // Vlierbes: alleen te plukken tijdens de vlierbes frenzy
+  vlierbes: [
+    '....G.....',
+    '...G.G....',
+    '..G..G.G..',
+    '.G.G..G.G.',
+    '.kk.kk.kk.',
+    'kqPkqPkqPk',
+    'kPPkPPkPPk',
+    '.kkqkkqkk.',
+    '..kPPkPPk.',
+    '...kk.kk..',
+  ],
+  // Vlierbesjam: een potje met een geruit dekseltje
+  vlierbesjam: [
+    '..kkkkkk..',
+    '.krwrwrwk.',
+    '.kkkkkkkk.',
+    '..kwwwwk..',
+    '.kPPPPPPk.',
+    'kPqPPPPPPk',
+    'kPqwwwwPPk',
+    'kPPwwwwPPk',
+    'kPPPPPPPPk',
+    '.kkkkkkkk.',
   ],
   // De oven van de bakkerij; ovenAan gloeit tijdens het bakken.
   oven: [

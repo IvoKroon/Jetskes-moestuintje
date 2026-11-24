@@ -44,7 +44,7 @@ body.speelt #spel { bottom: env(safe-area-inset-bottom); }
   align-items: center;
   justify-content: center;
 }
-#tuin { display: flex; flex-direction: column; align-items: center; }
+#tuin { position: relative; display: flex; flex-direction: column; align-items: center; }
 #kattenpad {
   display: block;
   image-rendering: pixelated;
@@ -134,3 +134,34 @@ body.speelt #spel { bottom: env(safe-area-inset-bottom); }
 .records.online li span:first-child { display: inline-block; max-width: 70%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }
 .records.online li span:last-child { opacity: 1; }
 .records li.jij { color: var(--oranje); }
+
+/* Vlierbes frenzy: balkje met de pluktijd over de schutting, paarse rand en even schudden als de ranken groeien */
+.frenzy-balk {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 8px 6px;
+  font-size: 10px;
+  color: var(--papier);
+  background: #4a2a5a;
+  border: 3px solid var(--inkt);
+  box-shadow: 3px 3px 0 var(--inkt);
+  pointer-events: none;
+}
+.frenzy-balk[hidden] { display: none; }
+.frenzy-balk span { display: flex; align-items: center; justify-content: center; gap: 6px; }
+.frenzy-balk img { width: 20px; height: 20px; }
+.frenzy-balk i { display: block; height: 6px; background: var(--inkt); }
+.frenzy-balk b { display: block; height: 100%; width: 100%; background: #8a5aa6; }
+body.frenzy #bord { border-color: #4a2a5a; }
+@media (prefers-reduced-motion: no-preference) {
+  .frenzy-balk { animation: frenzy-wiebel 0.3s steps(2) infinite; }
+  body.frenzy-groeit #bord { animation: frenzy-schud 0.12s steps(2) infinite; }
+}
+@keyframes frenzy-wiebel { 50% { transform: rotate(-1.5deg) scale(1.03); } }
+@keyframes frenzy-schud { 50% { transform: translate(2px, -2px); } }

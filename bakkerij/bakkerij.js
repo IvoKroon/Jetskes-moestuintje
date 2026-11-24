@@ -24,7 +24,8 @@ const hoeveel = (n, ding) => {
   const namen = GEWAS_NAMEN[ding] ?? RECEPTEN[ding];
   return `${n} ${n === 1 ? namen.naam.toLowerCase() : namen.meer}`;
 };
-const losWaard = (recept) => Object.entries(RECEPTEN[recept].nodig).reduce((s, [g, n]) => s + n * (PRIJZEN[g] ?? 1), 0);
+// afgerond, want 20 vlierbessen van 0.1 is in JavaScript niet precies 2
+const losWaard = (recept) => Math.round(Object.entries(RECEPTEN[recept].nodig).reduce((s, [g, n]) => s + n * (PRIJZEN[g] ?? 1), 0) * 10) / 10;
 const aantalTeBakken = (recept, v) => Math.min(...Object.entries(RECEPTEN[recept].nodig).map(([g, n]) => Math.floor((v[g] ?? 0) / n)));
 
 function tekenDicht() {

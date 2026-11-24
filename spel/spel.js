@@ -2,7 +2,8 @@
 import { lees, bewaar } from '../shared/opslag.js';
 import { plaatje, plaatjeUrl, katPlaatje, maakGrond, maakGras, tekenTekst, KLEUR } from './spel-sprites.js';
 import { geluid } from './spel-geluid.js';
-import { bewaarOogst, eigenKatten, KATTEN } from './spel-markt.js';
+import { bewaarOogst, eigenKatten, KATTEN, GEWAS_NAMEN } from './spel-markt.js';
+import { FRENZY, maakFrenzy, werkFrenzyBij, tekenFrenzy, pluk, plukOver } from './spel-frenzy.js';
 import { haalTop, stuurScore, vulLijst, laatsteNaam, bewaarNaam } from '../shared/highscore.js';
 
 // ---------- Instellingen ----------
@@ -47,6 +48,13 @@ const COMBO_TIJD = 1.2;
 const MAX_COMBO = 5; // x1, x1.5 ... x3
 const MAX_HARTJES = 5;
 const HARTJE_PER = 1500; // extra hartje per zoveel punten
+
+// Vlierbes frenzy: na een minuut spelen, en daarna om de paar minuten opnieuw.
+// Om alleen de frenzy te testen: spel/?frenzy=1 start hem 2 seconden na Start, en daarna elke 20 seconden.
+const TEST_FRENZY = new URLSearchParams(location.search).get('frenzy') === '1';
+const FRENZY_NA = TEST_FRENZY ? 2 : 60; // seconden spelen tot de eerste frenzy
+const FRENZY_ELKE = TEST_FRENZY ? 20 : 180; // daarna weer na zoveel seconden gewoon spelen
+const PLUK_COMBO_TIJD = 0.5;
 
 // ---------- Elementen ----------
 
@@ -116,6 +124,11 @@ function nieuwSpel() {
     geoogst: {},
     weggejaagd: 0,
     schud: 0,
+    frenzy: null, // de vlierbes frenzy, als die bezig is
+    volgendeFrenzy: FRENZY_NA, // op deze speeltijd (S.tijd) begint de volgende
+    frenzyTijd: 0, // tijd in frenzy's; S.tijd staat dan stil
+    plukCombo: 0,
+    laatstePluk: -9,
   };
 }
 
@@ -458,7 +471,10 @@ function werkBij(dt) {
 
   werkBeestjesBij(dt);
   if (toestand !== 'spelen') return;
+  werkEffectenBij(dt);
+}
 
+function werkEffectenBij(dt) {
   for (const d of S.deeltjes) {
     d.t -= dt;
     d.vy += 60 * dt;
@@ -474,6 +490,7 @@ function werkBij(dt) {
 function tik(x, y) {
   if (toestand !== 'spelen') return;
   geluid.wakker();
+  if (S.frenzy) return plukBij(x, y, FRENZY.straalTik);
   // eerst beestjes: die zitten bovenop
   let raak = null;
   let beste = Infinity;
@@ -571,6 +588,8 @@ function teken() {
     if (b.fase === 'vlucht' && b.soort !== 'lieveheersbeestje') tekenTekst(ctx, '!', b.x, b.y - 12, KLEUR.y);
   }
 
+  if (S.frenzy) tekenFrenzy(ctx, S.frenzy, W, H, S.tijd + S.frenzyTijd);
+
   for (const d of S.deeltjes) {
     ctx.fillStyle = d.kleur;
     ctx.fillRect(Math.round(d.x), Math.round(d.y), 1, 1);
@@ -604,11 +623,74 @@ function pasGrootteAan() {
 }
 new ResizeObserver(pasGrootteAan).observe($('speelveld'));
 
+const veldPunt = (e) => {
+  const r = canvas.getBoundingClientRect();
+  return [((e.clientX - r.left) / r.width) * W, ((e.clientY - r.top) / r.height) * H];
+};
+let veegt = false;
 canvas.addEventListener('pointerdown', (e) => {
   e.preventDefault();
-  const r = canvas.getBoundingClientRect();
-  tik(((e.clientX - r.left) / r.width) * W, ((e.clientY - r.top) / r.height) * H);
+  veegt = true;
+  tik(...veldPunt(e));
 });
+// Tijdens de frenzy pluk je ook door over de trosjes te vegen
+canvas.addEventListener('pointermove', (e) => {
+  if (!veegt || !S.frenzy || toestand !== 'spelen') return;
+  for (const ev of e.getCoalescedEvents?.() ?? [e]) plukBij(...veldPunt(ev), FRENZY.straalVeeg);
+});
+for (const soort of ['pointerup', 'pointercancel', 'pointerleave']) canvas.addEventListener(soort, () => (veegt = false));
+
+// ---------- Vlierbes frenzy ----------
+
+const frenzyBalk = $('frenzyBalk');
+const frenzyKlok = $('frenzyKlok');
+
+function startFrenzy() {
+  S.frenzy = maakFrenzy(W, H);
+  S.plukCombo = 0;
+  veegt = false;
+  document.body.classList.add('frenzy');
+  frenzyBalk.hidden = false;
+  frenzyKlok.style.width = '100%';
+  melding('Vlierbes frenzy! Tik en veeg over de trosjes', 'vlierbes');
+  geluid.frenzy();
+  trilling(120);
+}
+
+function werkFrenzy(dt) {
+  S.frenzyTijd += dt;
+  const bezig = werkFrenzyBij(S.frenzy, dt);
+  werkEffectenBij(dt);
+  frenzyKlok.style.width = `${Math.round(plukOver(S.frenzy) * 100)}%`;
+  document.body.classList.toggle('frenzy-groeit', S.frenzy.fase === 'groei');
+  if (!bezig) stopFrenzy();
+}
+
+function stopFrenzy() {
+  const n = S.frenzy.geplukt;
+  S.frenzy = null;
+  S.volgendeFrenzy = S.tijd + FRENZY_ELKE;
+  document.body.classList.remove('frenzy', 'frenzy-groeit');
+  frenzyBalk.hidden = true;
+  melding(n ? `${n} vlierbessen geplukt! Verder met de tuin` : 'De vlierbessen zijn weg. Verder met de tuin', 'vlierbes');
+  geluid.level();
+}
+
+/** Plukt alle rijpe trosjes rond (x, y): 1 punt per besje, en alles gaat in je voorraad. */
+function plukBij(x, y, straal) {
+  const raak = pluk(S.frenzy, x, y, straal);
+  if (!raak.length) return;
+  const aantal = raak.reduce((som, t) => som + t.n, 0);
+  S.plukCombo = S.frenzyTijd - S.laatstePluk < PLUK_COMBO_TIJD ? S.plukCombo + 1 : 1;
+  S.laatstePluk = S.frenzyTijd;
+  S.geoogst.vlierbes = (S.geoogst.vlierbes ?? 0) + aantal;
+  bewaarOogst('vlierbes', aantal);
+  for (const t of raak) stof(t.x, t.y, KLEUR.P, 3, true);
+  zweef(`+${aantal}`, x, y - 3, raak.length > 1 ? KLEUR.y : KLEUR.w);
+  geluid.pluk(S.plukCombo);
+  trilling(8);
+  punt(aantal);
+}
 
 // ---------- De katten op de schutting ----------
 // Twee katten (zwart-wit en cyperse) lopen om de beurt boven de tuin langs, nooit over het speelveld.
@@ -777,7 +859,7 @@ function tekenKat() {
 
 kattenpad.addEventListener('pointerdown', (e) => {
   e.preventDefault();
-  if (toestand !== 'spelen') return;
+  if (toestand !== 'spelen' || S.frenzy) return;
   const r = kattenpad.getBoundingClientRect();
   const x = ((e.clientX - r.left) / r.width) * W;
   geluid.wakker();
@@ -801,8 +883,12 @@ function lus(nu) {
   const dt = Math.min(0.05, (nu - vorige) / 1000 || 0);
   vorige = nu;
   if (toestand === 'spelen') {
-    werkBij(dt);
-    werkKatBij(dt);
+    if (S.frenzy) werkFrenzy(dt); // de gewone tuin staat stil
+    else {
+      werkBij(dt);
+      werkKatBij(dt);
+      if (toestand === 'spelen' && S.tijd >= S.volgendeFrenzy) startFrenzy();
+    }
   }
   if (S) {
     teken();
@@ -832,6 +918,8 @@ function toon(naam) {
 
 function start() {
   geluid.wakker();
+  document.body.classList.remove('frenzy', 'frenzy-groeit');
+  frenzyBalk.hidden = true;
   nieuwSpel();
   toonStand();
   toestand = 'spelen';
@@ -853,6 +941,8 @@ function hervat() {
 
 function eindeSpel() {
   toestand = 'einde';
+  document.body.classList.remove('frenzy', 'frenzy-groeit');
+  frenzyBalk.hidden = true;
   geluid.einde();
   const scores = lees('spel.scores', []);
   const oudRecord = lees('spel.highscore', 0) ?? 0;
@@ -869,12 +959,13 @@ function eindeSpel() {
   oogst.replaceChildren();
   const lijst = Object.entries(S.geoogst).sort((a, b) => b[1] - a[1]);
   for (const [naam, aantal] of lijst) {
+    const namen = GEWASSEN[naam] ?? GEWAS_NAMEN[naam];
     const li = document.createElement('li');
     const img = document.createElement('img');
     img.src = plaatjeUrl(naam);
     img.className = 'sprite';
     img.alt = '';
-    li.append(img, `${aantal} ${aantal === 1 ? GEWASSEN[naam].naam.toLowerCase() : GEWASSEN[naam].meer}`);
+    li.append(img, `${aantal} ${aantal === 1 ? namen.naam.toLowerCase() : namen.meer}`);
     oogst.append(li);
   }
   if (S.weggejaagd) {
@@ -908,7 +999,8 @@ function toonTop(top, plek = null) {
 }
 
 function toonOnline() {
-  teVersturen = S.score > 0 ? { score: S.score, tijd: S.tijd } : null;
+  // speeltijd inclusief de frenzy's; een testpotje (?frenzy=1) gaat niet naar de online top 10
+  teVersturen = S.score > 0 && !TEST_FRENZY ? { score: S.score, tijd: S.tijd + S.frenzyTijd } : null;
   naamForm.hidden = !teVersturen;
   naamForm.querySelector('.naam-rij').hidden = false;
   naamVeld.disabled = naamKnop.disabled = false;

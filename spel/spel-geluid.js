@@ -55,5 +55,8 @@ export const geluid = {
   foei: () => reeks([300, 200], 0.1, { vol: 0.05 }),
   hartje: () => reeks([659, 880, 1175], 0.07),
   level: () => reeks([523, 659, 784, 1047], 0.08),
+  // vlierbes frenzy: snel omhoog trillende toontjes, en per pluk een blipje dat hoger wordt
+  frenzy: () => reeks([392, 494, 587, 784, 988, 1175, 1568], 0.045, { vol: 0.05 }),
+  pluk: (combo = 1) => toon(600 * 2 ** (Math.min(combo, 12) / 12), 0.05, { type: 'triangle', naar: 900 * 2 ** (Math.min(combo, 12) / 12), vol: 0.06 }),
   einde: () => reeks([392, 330, 262, 196], 0.18, { type: 'triangle', vol: 0.1 }),
 };

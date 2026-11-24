@@ -29,6 +29,10 @@
 
       <main id="speelveld">
         <div id="tuin">
+          <div id="frenzyBalk" class="frenzy-balk" role="status" hidden>
+            <span><img data-sprite="vlierbes" class="sprite" alt="" />Vlierbes frenzy!</span>
+            <i><b id="frenzyKlok"></b></i>
+          </div>
           <canvas id="kattenpad" aria-hidden="true"></canvas>
           <div id="bord">
             <canvas id="veld" aria-label="Moestuin"></canvas>
@@ -45,6 +49,7 @@
               <li><img data-sprite="tomaat" class="sprite" alt="" />Rijp? Tik om te oogsten voordat het rot. Snel = meer punten</li>
               <li><img data-sprite="luis" class="sprite" alt="" />Tik luizen en slakken weg voordat ze alles opeten</li>
               <li><img data-sprite="lieveheersbeestje" class="sprite" alt="" />Lieveheersbeestjes zijn vriendjes: niet tikken!</li>
+              <li><img data-sprite="vlierbes" class="sprite" alt="" />Na een minuut: vlierbes frenzy! Tik en veeg zo snel je kunt over de trosjes</li>
               <li><img data-sprite="muntje" class="sprite" alt="" />Je oogst verkoop je op de Markt (in het menu). Spaar voor de bakkerij en voor de katten Dexter en Willem</li>
             </ul>
             <button id="startKnop" class="knop groen breed">Start</button>
