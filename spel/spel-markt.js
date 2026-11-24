@@ -19,8 +19,8 @@ export const GEWAS_NAMEN = {
 
 // Muntjes per stuk groente of fruit
 // Graan is goedkoop: er groeit veel van. Vlierbessen pluk je met honderden tegelijk,
-// die zijn nog veel minder waard: 10 vlierbessen = 1 munt.
-const GROENTE_PRIJZEN = { graan: 1, radijs: 2, wortel: 2, tomaat: 3, aardbei: 4, pompoen: 8, vlierbes: 0.1 };
+// die zijn bijna niks waard: 100 vlierbessen = 1 munt.
+const GROENTE_PRIJZEN = { graan: 1, radijs: 2, wortel: 2, tomaat: 3, aardbei: 4, pompoen: 8, vlierbes: 0.01 };
 
 // De bakkerij: graan is de basis van alles; met wat oogst erbij bak je iets dat meer oplevert dan de losse producten.
 export const RECEPTEN = {
@@ -31,7 +31,7 @@ export const RECEPTEN = {
   aardbeientaart: { naam: 'Aardbeientaart', meer: 'aardbeientaarten', nodig: { graan: 2, aardbei: 3 }, prijs: 22 },
   pompoentaart: { naam: 'Pompoentaart', meer: 'pompoentaarten', nodig: { graan: 2, pompoen: 1, wortel: 2 }, prijs: 24 },
   // Jam van de frenzy-vlierbessen, zonder graan. Heel weinig waard, maar net iets meer dan de losse bessen.
-  vlierbesjam: { naam: 'Vlierbesjam', meer: 'potjes vlierbesjam', nodig: { vlierbes: 20 }, prijs: 3 },
+  vlierbesjam: { naam: 'Vlierbesjam', meer: 'potjes vlierbesjam', nodig: { vlierbes: 100 }, prijs: 2 },
 };
 
 export const PRIJZEN = {
