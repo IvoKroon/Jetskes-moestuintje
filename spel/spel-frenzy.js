@@ -2,7 +2,7 @@
 // Daaraan komen razendsnel trosjes vlierbessen, die je met tikken én vegen plukt (veel tegelijk).
 // Na een paar seconden trekken de ranken zich terug en gaat het gewone spel verder.
 // Dit bestand doet alleen de frenzy zelf (ranken, trosjes, tekenen); spel.js regelt punten en opslag.
-import { KLEUR } from './spel-sprites.js';
+import { KLEUR, plaatje } from './spel-sprites.js';
 
 export const FRENZY = {
   groei: 1.6, // zo lang groeien de ranken over het veld
@@ -16,6 +16,7 @@ export const FRENZY = {
   val: 0.45, // ...en anders vallen ze eraf (geen straf)
   straalTik: 7,
   straalVeeg: 5,
+  voordoen: 2.4, // zo lang doet een handje aan het begin van het plukken voor hoe je veegt
 };
 
 const rnd = (a, b) => a + Math.random() * (b - a);
@@ -179,15 +180,68 @@ export function tekenFrenzy(ctx, f, W, H, tijd) {
       ctx.fillRect(t.steel.x, t.steel.y + 1, 1, 1);
     }
     const knipper = fs === 'rijp' && t.t > FRENZY.bloei + FRENZY.groen + FRENZY.rijp - 0.6 && Math.floor(tijd * 10) % 2;
+    if (fs === 'rijp' && !t.valt) {
+      tekenRijp(ctx, t, tijd, knipper);
+      continue;
+    }
     for (let i = 0; i < t.n; i++) {
       const [dx, dy] = BESJES[i];
       if (fs === 'bloei') ctx.fillStyle = i === 0 ? KLEUR.y : KLEUR.w;
       else if (fs === 'groen') ctx.fillStyle = KLEUR.g;
-      else ctx.fillStyle = knipper ? DONKER : i === 1 ? LICHTPAARS : PAARS;
+      else ctx.fillStyle = PAARS;
       if (fs === 'bloei' && i > 4) continue;
       ctx.fillRect(t.x + dx, t.y + dy + val, 1, 1);
     }
   }
+
+  if (f.fase === 'pluk' && f.t < FRENZY.voordoen) tekenHandje(ctx, f, W, H);
+}
+
+// Per trosgrootte: welke pixels de tros vult (besjes plus de gaatjes ertussen) en de rand eromheen.
+const VORMEN = Array.from({ length: BESJES.length + 1 }, (_, n) => {
+  const besjes = new Set(BESJES.slice(0, n).map(([x, y]) => `${x},${y}`));
+  const buren = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+  const vol = new Set(besjes);
+  for (let y = -2; y <= 3; y++) for (let x = -3; x <= 3; x++) {
+    if (buren.filter(([ox, oy]) => besjes.has(`${x + ox},${y + oy}`)).length >= 2) vol.add(`${x},${y}`);
+  }
+  const rand = new Set();
+  for (const c of vol) {
+    const [x, y] = c.split(',').map(Number);
+    for (const [ox, oy] of buren) if (!vol.has(`${x + ox},${y + oy}`)) rand.add(`${x + ox},${y + oy}`);
+  }
+  const lijst = (set) => [...set].map((c) => c.split(',').map(Number));
+  return { vol: lijst(vol), rand: lijst(rand) };
+});
+
+/** Een rijp trosje: dikke paarse bol met een lichte rand en een glinster, en hij hupt op en neer (net als rijpe groente). */
+function tekenRijp(ctx, t, tijd, knipper) {
+  const { vol, rand } = VORMEN[t.n];
+  const y = t.y + (Math.sin(tijd * 10 + t.x) > 0 ? -1 : 0);
+  ctx.fillStyle = KLEUR.q;
+  for (const [dx, dy] of rand) ctx.fillRect(t.x + dx, y + dy, 1, 1);
+  ctx.fillStyle = knipper ? DONKER : PAARS;
+  for (const [dx, dy] of vol) ctx.fillRect(t.x + dx, y + dy, 1, 1);
+  if (Math.floor(tijd * 3 + t.x * 0.37) % 2) {
+    ctx.fillStyle = KLEUR.w;
+    ctx.fillRect(t.x - 1, y - 1, 1, 1);
+  }
+}
+
+/** Een handje veegt heen en weer over het veld, met een spoortje erachter: zo pluk je. */
+function tekenHandje(ctx, f, W, H) {
+  const plek = (t) => {
+    const heen = (t * 1.6) % 2; // 0..2: naar rechts en weer terug
+    const x = 10 + (heen < 1 ? heen : 2 - heen) * (W - 26);
+    return { x: Math.round(x), y: Math.round(H / 2 + Math.sin(t * 9) * 5) };
+  };
+  ctx.fillStyle = KLEUR.w;
+  for (let k = 1; k <= 6; k++) {
+    const s = plek(Math.max(0, f.t - k * 0.04));
+    if (k % 2) ctx.fillRect(s.x, s.y, 1, 1);
+  }
+  const p = plek(f.t);
+  ctx.drawImage(plaatje('hand'), p.x - 2, p.y);
 }
 
 /** Hoeveel tijd er nog is om te plukken (0..1), voor het balkje. */

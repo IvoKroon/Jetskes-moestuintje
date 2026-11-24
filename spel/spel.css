@@ -156,6 +156,7 @@ body.speelt #spel { bottom: env(safe-area-inset-bottom); }
 .frenzy-balk[hidden] { display: none; }
 .frenzy-balk span { display: flex; align-items: center; justify-content: center; gap: 6px; }
 .frenzy-balk img { width: 20px; height: 20px; }
+.frenzy-balk small { font-size: 8px; text-align: center; color: var(--geel); }
 .frenzy-balk i { display: block; height: 6px; background: var(--inkt); }
 .frenzy-balk b { display: block; height: 100%; width: 100%; background: #8a5aa6; }
 body.frenzy #bord { border-color: #4a2a5a; }

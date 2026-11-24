@@ -159,6 +159,19 @@ Object.assign(EIGEN, {
     '..kPPkPPk.',
     '...kk.kk..',
   ],
+  // Een wijzend handje dat tijdens de frenzy voordoet hoe je veegt (vingertop linksboven op 2,0)
+  hand: [
+    '..kk.....',
+    '.kwwk....',
+    '.kwwk....',
+    '.kwwkkkk.',
+    'kkwwwwwwk',
+    'kwkwwwwwk',
+    'kwwwwwwwk',
+    '.kwwwwwk.',
+    '..kwwwk..',
+    '..kkkkk..',
+  ],
   // Vlierbesjam: een potje met een geruit dekseltje
   vlierbesjam: [
     '..kkkkkk..',
