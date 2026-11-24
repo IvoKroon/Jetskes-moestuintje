@@ -555,12 +555,16 @@ function teken() {
     } else if (v.fase === 'rijp') {
       const over = 1 - v.t / v.rijp;
       const hup = Math.sin(S.tijd * 10 + v.i) > 0 ? -1 : 0;
-      ctx.drawImage(plaatje(v.gewas), sx, sy + hup);
+      const img = plaatje(v.gewas);
+      const groter = (img.width - 10) / 2; // het graan is 12x12: iets naar linksboven, zodat het in het vakje past
+      ctx.drawImage(img, sx - groter, sy + hup - groter * 2);
       const kleur = over > 0.6 ? KLEUR.g : over > 0.3 ? KLEUR.y : KLEUR.r;
       if (over > 0.3 || knipper) balk(v, over, kleur);
       if (v.t < VERS_TIJD || v.perfect) ctx.drawImage(plaatje(knipper ? 'glinster' : 'glinsterKlein'), v.x + 11, v.y - 1);
     } else if (v.fase === 'rot') {
-      ctx.drawImage(plaatje(v.verwelkt ?? v.gewas, { rot: true }), sx, sy + 1);
+      const img = plaatje(v.verwelkt ?? v.gewas, { rot: true });
+      const groter = (img.width - 10) / 2;
+      ctx.drawImage(img, sx - groter, sy + 1 - groter * 2);
       // vliegje
       const a = S.tijd * 7 + v.i;
       ctx.fillStyle = KLEUR.k;
