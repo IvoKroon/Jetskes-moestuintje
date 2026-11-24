@@ -37,7 +37,13 @@ const BEESTJES = {
 };
 
 // Zaaien en oogsten gaan vanzelf; de speler geeft water en jaagt beestjes weg.
-const DORST_TIJD = 6; // zo lang kan een plantje zonder water
+// Water: hoe snel een plantje dorst krijgt en hoe snel hij daarna uitdroogt.
+const DORST_TIJD = 4; // zo lang kan een plantje zonder water in level 1 (was 6)
+const DORST_MIN = 2.5; // korter wordt het nooit, ook niet in hoge levels (was 3.5)
+const DORST_PER_LEVEL = 0.3; // per level zoveel seconden korter (was 0.4)
+const EERSTE_DORST = [0.03, 0.12]; // eerste dorst na dit deel van de groei (was 0.08 tot 0.2)
+const DORST_KEREN = 3; // zo vaak dorst per plantje (was 2)
+const DORST_KEREN_TRAAG = 4; // voor trage gewassen zoals tomaat en pompoen (was 3)
 const SNEL_WATER = 1; // binnen zoveel seconden water geven = extra punten
 // zo lang blijft een vakje leeg voordat er vanzelf gezaaid wordt: rustig in level 1, daarna sneller
 const zaaiPauze = (level) => Math.max(1, 4 - 0.6 * (level - 1));
@@ -158,7 +164,7 @@ const moeilijk = () => {
     maxBeestjes: Math.min(2 + Math.floor(l / 2), 6),
     snel: 1.1 + 0.06 * l,
     eet: Math.max(0.5, 0.85 - 0.05 * l),
-    dorstTijd: Math.max(3.5, DORST_TIJD - 0.4 * l),
+    dorstTijd: Math.max(DORST_MIN, DORST_TIJD - DORST_PER_LEVEL * l),
   };
 };
 
@@ -175,9 +181,9 @@ function zaai(v) {
   const g = GEWASSEN[naam];
   const groei = g.groei * m.groei * rnd(0.85, 1.15);
   // elk plantje heeft al vroeg dorst en daarna nog eens; trage gewassen en hogere levels vaker
-  let keren = g.groei > 5.5 ? 3 : 2;
+  let keren = g.groei > 5.5 ? DORST_KEREN_TRAAG : DORST_KEREN;
   if (S.level >= 3 && Math.random() < 0.5) keren++;
-  const eerste = rnd(0.08, 0.2);
+  const eerste = rnd(...EERSTE_DORST);
   const dorsten = Array.from({ length: keren }, (_, k) => eerste + (k * (0.85 - eerste)) / (keren - 1) + (k ? rnd(-0.05, 0.05) : 0));
   Object.assign(v, { fase: 'groeit', gewas: naam, t: 0, groei, rijp: g.rijp * m.rijp, dorsten, perfect: true, dorstig: false, dorstT: 0, verwelkt: null, teVeel: 0, laatsteWater: -9 });
   stof(v.x + 8, v.y + 12, KLEUR.b, 3);
