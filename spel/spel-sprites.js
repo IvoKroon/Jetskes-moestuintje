@@ -32,6 +32,7 @@ export const KLEUR = {
   V: '#5c5c26',
   P: '#5e2f80', // vlierbes
   q: '#b787dc', // lichtpaars glimmertje
+  n: '#5a6988', // stormwolk
 };
 
 // Hoe een rijpe groente verkleurt als hij rot.
@@ -71,6 +72,10 @@ const EIGEN = {
   druppel: ['..k..', '.kuk.', 'kuulk', 'kuuuk', '.kkk.'],
   glinster: ['..y..', '.yyy.', 'yywyy', '.yyy.', '..y..'],
   glinsterKlein: ['.....', '..y..', '.ywy.', '..y..', '.....'],
+  // het weer, voor het icoontje bovenin en de meldingen
+  weerZon: ['....y....', '.y.....y.', '...ooo...', '..oyyyo..', 'yyoywyoyy', '..oyyyo..', '...ooo...', '.y.....y.', '....y....'],
+  weerRegen: ['...kkk...', '..kwwsk..', '.kkwsssk.', 'kwwsssssk', 'ksssssssk', '.kkkkkkk.', '..u..u..u', '.u..u..u.', 'u..u..u..'],
+  weerStorm: ['...kkk...', '..knsnk..', '.kknnnnk.', 'knnnnnnnk', 'knnnnnnnk', '.kkkyykk.', '...yy....', '..yyyy...', '....y....', '...y.....'],
 };
 
 // Taarten uit de bakkerij: elk een eigen plaatje (10x10, net als de groente).

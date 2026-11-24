@@ -33,6 +33,14 @@ body.speelt #spel { bottom: env(safe-area-inset-bottom); }
   .hartjes img { width: 20px; height: 20px; }
   .score { min-width: 72px; }
 }
+/* Het weer, rechts naast de hartjes; wipt even op als het omslaat */
+.weer { display: flex; }
+.weer img { width: 27px; height: 27px; }
+@media (max-width: 360px) { .weer img { width: 22px; height: 22px; } }
+@media (prefers-reduced-motion: no-preference) {
+  .weer.nieuw { animation: weer-wip 0.25s steps(2) 3; }
+}
+@keyframes weer-wip { 50% { transform: translateY(-4px) scale(1.15); } }
 .hartjes img.leeg { filter: grayscale(1) brightness(0.6); opacity: 0.5; }
 .knop.klein { min-height: 40px; min-width: 44px; padding: 8px 10px; font-size: 12px; }
 
