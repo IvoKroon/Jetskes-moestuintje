@@ -1,6 +1,6 @@
 // De markt als eigen pagina: verkoop je oogst en taarten voor munten en koop de katten vrij.
 // De voorraad, munten en katten zijn dezelfde als in het spel (localStorage via spel-markt.js).
-import { voorraad, munten, eigenKatten, katPrijs, verkoop, koopKat, heeftBakkerij, koopBakkerij, BAKKERIJ_PRIJS, KATTEN, PRIJZEN, RECEPTEN, GEWAS_NAMEN } from '../spel/spel-markt.js';
+import { voorraad, munten, eigenKatten, katPrijs, verkoop, koopKat, heeftBakkerij, koopBakkerij, BAKKERIJ_PRIJS, KATTEN, PRIJZEN, RECEPTEN, GEWAS_NAMEN, opbrengstVan, prijsTekst } from '../spel/spel-markt.js';
 import { plaatjeUrl, katPlaatje } from '../spel/spel-sprites.js';
 import { geluid } from '../spel/spel-geluid.js';
 
@@ -40,13 +40,14 @@ function toonKraam() {
   }
   for (const g of soorten) {
     const n = v[g];
-    const totaal = n * PRIJZEN[g];
+    const totaal = opbrengstVan(g, n);
     const li = el('li');
     const wat = el('div', 'wat');
-    wat.append(el('strong', '', `${n} ${meervoud(g, n)}`), el('small', '', `${PRIJZEN[g]} per stuk`));
+    wat.append(el('strong', '', `${n} ${meervoud(g, n)}`), el('small', '', prijsTekst(g)));
     const knop = el('button', 'knop klein groen');
     knop.append(`+${totaal}`, img(plaatjeUrl('muntje')));
     knop.setAttribute('aria-label', `Verkoop ${n} ${meervoud(g, n)} voor ${totaal} munten`);
+    knop.disabled = !totaal; // bijv. 3 vlierbessen: nog geen hele munt waard
     knop.addEventListener('click', () => {
       const opbrengst = verkoop(g);
       geluid.wakker();

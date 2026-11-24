@@ -24,7 +24,8 @@ const hoeveel = (n, ding) => {
   const namen = GEWAS_NAMEN[ding] ?? RECEPTEN[ding];
   return `${n} ${n === 1 ? namen.naam.toLowerCase() : namen.meer}`;
 };
-const losWaard = (recept) => Object.entries(RECEPTEN[recept].nodig).reduce((s, [g, n]) => s + n * (PRIJZEN[g] ?? 1), 0);
+// afgerond, want 100 vlierbessen van 0.01 is in JavaScript niet altijd precies 1
+const losWaard = (recept) => Math.round(Object.entries(RECEPTEN[recept].nodig).reduce((s, [g, n]) => s + n * (PRIJZEN[g] ?? 1), 0) * 10) / 10;
 const aantalTeBakken = (recept, v) => Math.min(...Object.entries(RECEPTEN[recept].nodig).map(([g, n]) => Math.floor((v[g] ?? 0) / n)));
 
 function tekenDicht() {
@@ -164,7 +165,8 @@ async function bakMet(recept) {
   vliegers.replaceChildren();
   let i = 0;
   for (const [g, n] of Object.entries(r.nodig)) {
-    for (let k = 0; k < n; k++, i++) {
+    // hooguit 8 per soort de oven in, anders duurt 100 vlierbessen veel te lang
+    for (let k = 0; k < Math.min(n, 8); k++, i++) {
       const v = img(g, 'vlieger');
       v.style.setProperty('--i', i);
       v.style.setProperty('--x', `${(i % 2 ? 1 : -1) * (30 + (i % 3) * 18)}px`);

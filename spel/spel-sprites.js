@@ -29,13 +29,15 @@ export const KLEUR = {
   X: '#5c4a30', // donker rot
   v: '#8b8b3a', // verwelkt blad
   V: '#5c5c26',
+  P: '#5e2f80', // vlierbes
+  q: '#b787dc', // lichtpaars glimmertje
 };
 
 // Hoe een rijpe groente verkleurt als hij rot.
 // Hoe een plantje kleurt na te veel water: bruin blad.
 const BRUIN = { g: 'a', G: 'X', y: 'a' };
 
-const ROT = { r: 'x', R: 'X', o: 'x', y: 'X', g: 'v', G: 'V', w: 's', p: 'x' };
+const ROT = { r: 'x', R: 'X', o: 'x', O: 'X', y: 'X', a: 'x', g: 'v', G: 'V', w: 's', p: 'x' };
 
 const EIGEN = {
   jong: [
@@ -143,6 +145,45 @@ Object.assign(EIGEN, {
     '.kaaaaaak.',
     '..kkkkkk..',
     '..........',
+  ],
+    // Vlierbes: alleen te plukken tijdens de vlierbes frenzy
+  vlierbes: [
+    '....G.....',
+    '...G.G....',
+    '..G..G.G..',
+    '.G.G..G.G.',
+    '.kk.kk.kk.',
+    'kqPkqPkqPk',
+    'kPPkPPkPPk',
+    '.kkqkkqkk.',
+    '..kPPkPPk.',
+    '...kk.kk..',
+  ],
+  // Een wijzend handje dat tijdens de frenzy voordoet hoe je veegt (vingertop linksboven op 2,0)
+  hand: [
+    '..kk.....',
+    '.kwwk....',
+    '.kwwk....',
+    '.kwwkkkk.',
+    'kkwwwwwwk',
+    'kwkwwwwwk',
+    'kwwwwwwwk',
+    '.kwwwwwk.',
+    '..kwwwk..',
+    '..kkkkk..',
+  ],
+  // Vlierbesjam: een potje met een geruit dekseltje
+  vlierbesjam: [
+    '..kkkkkk..',
+    '.krwrwrwk.',
+    '.kkkkkkkk.',
+    '..kwwwwk..',
+    '.kPPPPPPk.',
+    'kPqPPPPPPk',
+    'kPqwwwwPPk',
+    'kPPwwwwPPk',
+    'kPPPPPPPPk',
+    '.kkkkkkkk.',
   ],
   // De oven van de bakkerij; ovenAan gloeit tijdens het bakken.
   oven: [

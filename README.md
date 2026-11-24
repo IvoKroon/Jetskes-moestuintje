@@ -25,6 +25,12 @@ npm install
 npm run dev
 ```
 
+## Vlierbes frenzy testen
+
+Na een minuut spelen begint de vlierbes frenzy (code in `spel/spel-frenzy.js`). Om hem meteen te testen:
+open `spel/?frenzy=1`. Dan start hij 2 seconden na Start en daarna elke 20 seconden opnieuw.
+Een testpotje gaat niet naar de online top 10.
+
 ## Online zetten
 
 De site staat op Vercel. Vercel herkent Vite: build-commando `npm run build`, output-map `dist`.

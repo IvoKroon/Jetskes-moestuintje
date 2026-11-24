@@ -15,6 +15,8 @@ const PALET = {
   p: '#f6a0c0', // roze
   s: '#c0cbdc', // grijs
   u: '#0099db', // blauw
+  a: '#d19a4a', // donker goud (graan)
+  O: '#b84a12', // donkeroranje
 };
 
 export const SPRITES = {
@@ -78,17 +80,20 @@ export const SPRITES = {
     '.kBoyoBBk.',
     '..kkkkkk..',
   ],
+  // Graan: een bosje van drie aren (zoals het emoji-graan), met kafnaaldjes en een oranje bandje. 12x12.
   graan: [
-    '..k.k.k.k.',
-    '.kykykyky.',
-    '.kyoyoyoyk',
-    'kyoyoyoyok',
-    'kyyoyoyoyk',
-    '.kyyoyoyk.',
-    '..kkooookk',
-    '...kbobk..',
-    '..kbobobk.',
-    '.kbbk.kbbk',
+    'a.....a....a',
+    '.a....y...a.',
+    '.y...yyy..y.',
+    'yyy..aOy.yyy',
+    'aOy..yOa.aOy',
+    'yOa..aOy.yOa',
+    '.aOy.yOa.aOy',
+    '.yOa.aOy.yOa',
+    '..ay..a..ya.',
+    '...b..b..b..',
+    '....bOoOb...',
+    '....b.b.b...',
   ],
   kiemplant: [
     '..........',
