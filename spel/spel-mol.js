@@ -26,8 +26,8 @@ const MOL_KLEUR = {
 };
 const HOOP_KLEUR = { b: KLEUR.b, B: KLEUR.B, L: '#a86a48', k: KLEUR.k };
 
-// De mol: 7 breed, 8 hoog. Alleen de bovenkant steekt uit de hoop.
-const KOP = ['..MMM..', '.MmmMM.', 'MMmMMMM'];
+// De mol: 7 breed, 7 hoog. Alleen de bovenkant steekt uit de hoop.
+const KOP = ['..MMM..', '.MmmMM.'];
 const POOTJES = ['ppMMMpp', 'ppMMMpp'];
 const MOL = {
   midden: [...KOP, 'MkMMMkM', 'MMMpMMM', 'MMpppMM', ...POOTJES],
@@ -36,11 +36,11 @@ const MOL = {
   rechts: [...KOP, 'MMkMMMk', 'MMMMpMM', 'MMMpppM', ...POOTJES],
   schrik: [...KOP, 'MwMMMwM', 'MMpppMM', 'MMpppMM', ...POOTJES],
 };
-const MOL_H = 8;
+const MOL_H = 7;
 
-// De molshoop: 9 breed, 4 hoog. Het gat zit in de tweede rij.
-const HOOP = ['...LbL...', '.bLbbbbb.', 'bbbbLbbLb', 'BbBbbBbbB'];
-const GAT = '..kkkkk..';
+// De molshoop: 7 breed, 4 hoog. Het gat zit in de tweede rij.
+const HOOP = ['..LbL..', '.bLbbb.', 'bbbLbbL', 'BbBbBbB'];
+const GAT = '.kkkkk.';
 
 // Wat de mol doet als hij boven is: [houding, seconden]
 const KIJKEN = [
@@ -204,7 +204,7 @@ export function tekenMol(ctx, mol) {
   plaatjes ??= maakPlaatjes();
   if (mol.plek && mol.fase !== 'slaapt') {
     const { x, y } = mol.plek;
-    const links = x - 4;
+    const links = x - 3;
     const boven = y - 2;
     // hoeveel rijen van de hoop er al (of nog) liggen
     const rijen = mol.fase === 'hoop'
@@ -215,7 +215,7 @@ export function tekenMol(ctx, mol) {
     const { hoop } = plaatjes;
     if (rijen > 0) {
       // de hoop groeit van onderen op
-      ctx.drawImage(hoop, 0, 4 - rijen, 9, rijen, links, boven + 4 - rijen, 9, rijen);
+      ctx.drawImage(hoop, 0, 4 - rijen, 7, rijen, links, boven + 4 - rijen, 7, rijen);
     }
     if (rijen === 4 && mol.fase !== 'hoop') ctx.drawImage(plaatjes.gat, links, y - 1);
     const h = hoogte(mol);
@@ -224,7 +224,7 @@ export function tekenMol(ctx, mol) {
       const schud = mol.fase === 'schrik' ? (Math.floor(mol.t * 30) % 2 ? 1 : -1) : 0;
       ctx.drawImage(img, 0, 0, 7, h, x - 3 + schud, y - h, 7, h);
       // de voorkant van de hoop ligt over de pootjes heen
-      ctx.drawImage(hoop, 0, 2, 9, 2, links, y, 9, 2);
+      ctx.drawImage(hoop, 0, 2, 7, 2, links, y, 7, 2);
       if (mol.fase === 'schrik') tekenTekst(ctx, '!', x, y - MOL_H - 7, KLEUR.y);
     }
   }

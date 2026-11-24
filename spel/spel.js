@@ -12,11 +12,11 @@ import { haalTop, stuurScore, vulLijst, laatsteNaam, bewaarNaam } from '../share
 // Het veld in 'echte' pixels; de browser vergroot het scherp.
 const VAK = 16;
 const TUSSEN = 2;
-const MARGE = 4;
+const MARGE = 8; // de grasrand rond de vakjes; breed genoeg voor de mol
 const KOLOMMEN = 3;
 const RIJEN = 3;
-const W = MARGE * 2 + KOLOMMEN * VAK + (KOLOMMEN - 1) * TUSSEN; // 60
-const H = MARGE * 2 + RIJEN * VAK + (RIJEN - 1) * TUSSEN; // 60
+const W = MARGE * 2 + KOLOMMEN * VAK + (KOLOMMEN - 1) * TUSSEN; // 68
+const H = MARGE * 2 + RIJEN * VAK + (RIJEN - 1) * TUSSEN; // 68
 
 // groeitijd en hoelang hij rijp blijft, in seconden
 const GEWASSEN = {
@@ -63,11 +63,11 @@ const PLUK_COMBO_TIJD = 0.5;
 const TEST_MOL = new URLSearchParams(location.search).get('mol') === '1';
 const MOL_EERSTE = TEST_MOL ? [2, 2] : [15, 25]; // seconden spelen tot de eerste mol (tussen ... en ...)
 const MOL_TUSSEN = TEST_MOL ? [3, 5] : [20, 40]; // daarna weer na zoveel seconden
-// Waar een molshoop mag komen: in het gras langs de onderkant, waar hij geen druppel of plantje bedekt.
+// Waar een molshoop mag komen: alleen in de grasrand rondom de vakjes, nooit op het veld zelf.
+// (x, y) is het gat; de mol is 7 breed en steekt 7 pixels boven het gat uit.
 const MOL_PLEKKEN = [
-  ...[1, 2].map((k) => ({ x: MARGE + k * (VAK + TUSSEN) - 1, y: H - 2 })), // tussen de vakjes
-  { x: 3, y: H - 2 },
-  { x: W - 4, y: H - 2 }, // in de hoekjes
+  ...[6, 18, 34, 50, 62].map((x) => ({ x, y: H - 1 })), // onderrand
+  ...[18, 36, 54].flatMap((y) => [{ x: 3, y }, { x: W - 4, y }]), // linker- en rechterrand
 ];
 
 // ---------- Elementen ----------
