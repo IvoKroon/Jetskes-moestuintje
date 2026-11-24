@@ -4,6 +4,7 @@ import { plaatje, plaatjeUrl, katPlaatje, maakGrond, maakGras, tekenTekst, KLEUR
 import { geluid } from './spel-geluid.js';
 import { bewaarOogst, eigenKatten, KATTEN, GEWAS_NAMEN } from './spel-markt.js';
 import { FRENZY, maakFrenzy, werkFrenzyBij, tekenFrenzy, pluk, plukOver } from './spel-frenzy.js';
+import { WEER_SOORTEN, maakWeer, wisselWeer, werkWeerBij, slaInBij, windKracht, tekenWeerVeld, tekenLucht } from './spel-weer.js';
 import { haalTop, stuurScore, vulLijst, laatsteNaam, bewaarNaam } from '../shared/highscore.js';
 
 // ---------- Instellingen ----------
@@ -55,6 +56,33 @@ const TEST_FRENZY = new URLSearchParams(location.search).get('frenzy') === '1';
 const FRENZY_NA = TEST_FRENZY ? 2 : 60; // seconden spelen tot de eerste frenzy
 const FRENZY_ELKE = TEST_FRENZY ? 20 : 180; // daarna weer na zoveel seconden gewoon spelen
 const PLUK_COMBO_TIJD = 0.5;
+
+// Het weer wisselt na een tijdje tussen zon, regen en storm. Alle tijden zijn seconden gewoon spelen:
+// tijdens de vlierbes frenzy (en de pauze) staat het weer stil.
+//   zon:   alles gewoon.
+//   regen: dorstige plantjes krijgen vanzelf water (en te veel water geven kan niet), maar er komen meer slakken.
+//   storm: ook regen, plus wind: rijpe oogst blijft korter goed en de bliksem slaat in op een vakje.
+//          Het vakje knippert eerst geel: oogst snel, want wat er dan nog staat is weg (geen hartje kwijt).
+// Om te testen: spel/?weer=regen, ?weer=storm of ?weer=zon begint met dat weer en houdt het vast.
+const WEER = {
+  eersteZon: 25, // zo lang schijnt aan het begin de zon
+  duur: { zon: [20, 30], regen: [15, 22], storm: [10, 15] }, // zo lang duurt elk weer (van, tot)
+  kans: { zon: 3, regen: 3, storm: 2 }, // hoe vaak elk weer komt als het wisselt
+  stormVanaf: 2, // storm pas vanaf dit level
+  overgang: 2, // in zoveel seconden trekt het nieuwe weer erover
+  regenWater: 0.8, // bij regen en storm krijgt een dorstig plantje na zoveel seconden vanzelf water
+  slak: 0.35, // kans op een slak in plaats van een luis (vanaf level 2)...
+  regenSlak: 0.65, // ...en als het regent of stormt
+  stormRijp: 0.65, // bij storm blijft rijpe oogst maar zo lang goed (keer de gewone tijd)
+  bliksemElke: [3.5, 6], // bij storm slaat om de zoveel seconden de bliksem in
+  bliksemWaarschuwing: 1.6, // zo lang knippert het vakje voordat de bliksem inslaat
+};
+const TEST_WEER = Object.keys(WEER_SOORTEN).find((w) => w === new URLSearchParams(location.search).get('weer'));
+const WEER_MELDING = {
+  zon: 'De zon schijnt weer!',
+  regen: 'Het regent! Je plantjes krijgen vanzelf water',
+  storm: 'Storm! Oogst snel, de bliksem kan inslaan',
+};
 
 // ---------- Elementen ----------
 
@@ -129,6 +157,10 @@ function nieuwSpel() {
     frenzyTijd: 0, // tijd in frenzy's; S.tijd staat dan stil
     plukCombo: 0,
     laatstePluk: -9,
+    weer: maakWeer(TEST_WEER ?? 'zon', W, KAT_H),
+    weerKlok: TEST_WEER ? Infinity : WEER.eersteZon, // over zoveel seconden wisselt het weer
+    bliksemKlok: 2,
+    bliksemUitgelegd: false,
   };
 }
 
@@ -279,7 +311,7 @@ function vrijDoel() {
 function nieuwBeestje() {
   const doel = vrijDoel();
   if (doel === null) return false;
-  const soort = S.level >= 2 && Math.random() < 0.35 ? 'slak' : 'luis';
+  const soort = S.level >= 2 && Math.random() < (regent() ? WEER.regenSlak : WEER.slak) ? 'slak' : 'luis';
   const p = randPunt();
   S.beestjes.push({ soort, ...p, doel, fase: 'loop', leven: BEESTJES[soort].leven, eet: 0, kant: 1, anim: 0, raak: 0, zij: Math.random() < 0.5 ? -1 : 1 });
   return true;
@@ -429,6 +461,7 @@ function melding(tekst, sprite) {
 
 function werkBij(dt) {
   S.tijd += dt;
+  werkWeer(dt);
   const level = 1 + Math.floor(S.tijd / LEVEL_DUUR);
   if (level !== S.level) {
     S.level = level;
@@ -441,10 +474,15 @@ function werkBij(dt) {
   for (const v of S.vakken) {
     v.wiebel = Math.max(0, v.wiebel - dt);
     v.t += dt;
+    if (v.fase === 'rijp' && S.weer.nu === 'storm') v.t += dt * (1 / WEER.stormRijp - 1); // de storm laat rijpe oogst sneller bederven
     if (v.fase === 'groeit' && v.dorstig) {
       v.t -= dt; // zonder water groeit hij niet
       v.dorstT += dt;
-      if (v.dorstT >= moeilijk().dorstTijd) {
+      if (regent() && v.dorstT >= WEER.regenWater) {
+        // de regen geeft hem water; geen punten, maar ook geen straf
+        Object.assign(v, { dorstig: false, dorstT: 0, laatsteWater: S.tijd });
+        stof(v.x + 8, v.y + 4, KLEUR.l, 4);
+      } else if (v.dorstT >= moeilijk().dorstTijd) {
         Object.assign(v, { fase: 'rot', t: 0, dorstig: false, verwelkt: stadium(v) });
         zweef('-', v.x + 8, v.y + 3, KLEUR.r);
         verliesHartje();
@@ -461,7 +499,7 @@ function werkBij(dt) {
       verliesHartje();
       if (toestand !== 'spelen') return;
     }
-    else if (v.fase === 'leeg' && v.t >= zaaiPauze(S.level) + v.wacht) {
+    else if (v.fase === 'leeg' && v.t >= zaaiPauze(S.level) + v.wacht && S.weer.bliksem?.vak !== v.i) {
       v.wacht = 0;
       zaai(v);
     }
@@ -518,7 +556,7 @@ function tik(x, y) {
     Object.assign(v, { fase: 'leeg', gewas: null, t: 0 });
     geluid.opruimen();
   }
-  else if (v.fase === 'groeit') teVeelWater(v);
+  else if (v.fase === 'groeit' && !regent()) teVeelWater(v); // als het regent is het toch al nat
 }
 
 // ---------- Tekenen ----------
@@ -536,7 +574,9 @@ function teken() {
       ctx.fillStyle = KLEUR.B;
       ctx.fillRect(v.x + 4, v.y + 9, 8, 3);
     }
-    const dx = v.wiebel > 0 ? (Math.floor(v.wiebel * 40) % 2 ? 1 : -1) : 0;
+    // wiebelen na te veel water, en wuiven in de storm
+    const zwaai = Math.round(Math.sin(S.tijd * 7 + v.i * 1.7) * windKracht(S.weer));
+    const dx = v.wiebel > 0 ? (Math.floor(v.wiebel * 40) % 2 ? 1 : -1) : zwaai;
     const sx = v.x + 3 + dx;
     const sy = v.y + 2;
     if (v.fase === 'groeit') {
@@ -593,6 +633,7 @@ function teken() {
   }
 
   if (S.frenzy) tekenFrenzy(ctx, S.frenzy, W, H, S.tijd + S.frenzyTijd);
+  else tekenWeerVeld(ctx, S.weer, H, S.tijd, VAK); // tijdens de frenzy staat het weer stil
 
   for (const d of S.deeltjes) {
     ctx.fillStyle = d.kleur;
@@ -694,6 +735,81 @@ function plukBij(x, y, straal) {
   geluid.pluk(S.plukCombo);
   trilling(8);
   punt(aantal);
+}
+
+// ---------- Het weer ----------
+
+const weerEl = $('weer');
+const regent = () => S.weer.nu !== 'zon';
+
+function toonWeer(nieuw = false) {
+  const soort = WEER_SOORTEN[S.weer.nu];
+  weerEl.querySelector('img').src = plaatjeUrl(soort.sprite);
+  weerEl.setAttribute('aria-label', `Weer: ${soort.naam}`);
+  weerEl.title = soort.naam;
+  if (nieuw) {
+    weerEl.classList.remove('nieuw');
+    void weerEl.offsetWidth; // animatie opnieuw starten
+    weerEl.classList.add('nieuw');
+  }
+}
+
+function werkWeer(dt) {
+  const w = S.weer;
+  S.weerKlok -= dt;
+  if (S.weerKlok <= 0) {
+    const opties = [];
+    for (const [soort, n] of Object.entries(WEER.kans)) {
+      if (soort === w.nu || (soort === 'storm' && S.level < WEER.stormVanaf)) continue;
+      for (let i = 0; i < n; i++) opties.push(soort);
+    }
+    const nieuw = kies(opties);
+    wisselWeer(w, nieuw);
+    S.weerKlok = rnd(...WEER.duur[nieuw]);
+    S.bliksemKlok = WEER.overgang + rnd(1, 2.5);
+    melding(WEER_MELDING[nieuw], WEER_SOORTEN[nieuw].sprite);
+    geluid.weer(nieuw);
+    toonWeer(true);
+  }
+  werkWeerBij(w, dt, H, WEER.overgang);
+
+  // Bliksem: eerst knippert een vakje met een plantje, daarna slaat hij in
+  if (w.nu !== 'storm') w.bliksem = null;
+  else if (w.bliksem) {
+    w.bliksem.t += dt;
+    if (w.bliksem.t >= WEER.bliksemWaarschuwing) slaIn();
+  } else if ((S.bliksemKlok -= dt) <= 0) {
+    const doelen = S.vakken.filter(heeftGewas);
+    if (doelen.length) {
+      const v = kies(doelen);
+      w.bliksem = { vak: v.i, x: v.x + VAK / 2, y: v.y + VAK / 2, t: 0 };
+      geluid.rommel();
+    }
+    S.bliksemKlok = doelen.length ? rnd(...WEER.bliksemElke) : 0.5;
+  }
+}
+
+function slaIn() {
+  const w = S.weer;
+  const { vak, x, y } = w.bliksem;
+  const v = S.vakken[vak];
+  w.bliksem = null;
+  slaInBij(w, x, y);
+  geluid.donder();
+  trilling(150);
+  S.schud = 0.3;
+  if (heeftGewas(v)) {
+    Object.assign(v, { fase: 'opgegeten', gewas: null, t: 0, dorstig: false });
+    stof(x, y, KLEUR.y, 6, true);
+    stof(x, y + 2, KLEUR.k, 6, true);
+    zweef('-', x, v.y + 3, KLEUR.r);
+    if (!S.bliksemUitgelegd) melding('Bliksem! Oogst snel als een vakje geel knippert', 'weerStorm');
+    S.bliksemUitgelegd = true;
+  } else zweef('!', x, v.y + 3, KLEUR.y); // net op tijd geoogst
+  // beestjes in de buurt schrikken en rennen weg
+  for (const b of S.beestjes) {
+    if (b.fase !== 'vlucht' && b.fase !== 'tevreden' && Math.hypot(b.x - x, b.y - y) < 14) vlucht(b);
+  }
 }
 
 // ---------- De katten op de schutting ----------
@@ -819,6 +935,7 @@ function katHouding(kat) {
 
 function tekenKat() {
   kctx.drawImage(schutting, 0, 0);
+  if (!S.frenzy) tekenLucht(kctx, S.weer, SCHUTTING_Y, S.tijd);
   if (S.plasje) {
     // een gele druppelstraal langs de schutting en een plasje dat langzaam opdroogt
     const p = S.plasje;
@@ -926,6 +1043,7 @@ function start() {
   frenzyBalk.hidden = true;
   nieuwSpel();
   toonStand();
+  toonWeer();
   toestand = 'spelen';
   toon(null);
   melding('Druppel? Tik het plantje om water te geven!', 'gieter');
@@ -1003,8 +1121,8 @@ function toonTop(top, plek = null) {
 }
 
 function toonOnline() {
-  // speeltijd inclusief de frenzy's; een testpotje (?frenzy=1) gaat niet naar de online top 10
-  teVersturen = S.score > 0 && !TEST_FRENZY ? { score: S.score, tijd: S.tijd + S.frenzyTijd } : null;
+  // speeltijd inclusief de frenzy's; een testpotje (?frenzy=1 of ?weer=...) gaat niet naar de online top 10
+  teVersturen = S.score > 0 && !TEST_FRENZY && !TEST_WEER ? { score: S.score, tijd: S.tijd + S.frenzyTijd } : null;
   naamForm.hidden = !teVersturen;
   naamForm.querySelector('.naam-rij').hidden = false;
   naamVeld.disabled = naamKnop.disabled = false;
@@ -1078,6 +1196,7 @@ for (const img of document.querySelectorAll('img[data-sprite]')) img.src = plaat
 zetGeluidKnop();
 nieuwSpel();
 toonStand();
+toonWeer();
 toonRecords();
 toon('start');
 pasGrootteAan();

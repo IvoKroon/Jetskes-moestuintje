@@ -58,5 +58,12 @@ export const geluid = {
   // vlierbes frenzy: snel omhoog trillende toontjes, en per pluk een blipje dat hoger wordt
   frenzy: () => reeks([392, 494, 587, 784, 988, 1175, 1568], 0.045, { vol: 0.05 }),
   pluk: (combo = 1) => toon(600 * 2 ** (Math.min(combo, 12) / 12), 0.05, { type: 'triangle', naar: 900 * 2 ** (Math.min(combo, 12) / 12), vol: 0.06 }),
+  // het weer: een deuntje als het omslaat, gerommel als de bliksem eraan komt en een knal bij de inslag
+  weer: (soort) => reeks(soort === 'zon' ? [523, 659, 784] : soort === 'regen' ? [784, 659, 523] : [196, 185, 175], 0.09, { type: 'triangle', vol: 0.06 }),
+  rommel: () => toon(70, 0.9, { type: 'sawtooth', naar: 45, vol: 0.035 }),
+  donder: () => {
+    toon(1200, 0.08, { type: 'square', naar: 200, vol: 0.05 });
+    toon(90, 0.7, { type: 'sawtooth', naar: 30, vol: 0.1, wacht: 0.04 });
+  },
   einde: () => reeks([392, 330, 262, 196], 0.18, { type: 'triangle', vol: 0.1 }),
 };
