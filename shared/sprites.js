@@ -17,6 +17,7 @@ const PALET = {
   u: '#0099db', // blauw
   a: '#d19a4a', // donker goud (graan)
   O: '#b84a12', // donkeroranje
+  h: '#f5c542', // tarwegeel (schaduwkant van het graan)
 };
 
 export const SPRITES = {
@@ -80,20 +81,22 @@ export const SPRITES = {
     '.kBoyoBBk.',
     '..kkkkkk..',
   ],
-  // Graan: een bosje van drie aren (zoals het emoji-graan), met kafnaaldjes en een oranje bandje. 12x12.
+  // Graan: één tarwe-aar met zeven korrels, naar het lijn-icoon dat Ivo koos, in tarwegeel. 14x14.
   graan: [
-    'a.....a....a',
-    '.a....y...a.',
-    '.y...yyy..y.',
-    'yyy..aOy.yyy',
-    'aOy..yOa.aOy',
-    'yOa..aOy.yOa',
-    '.aOy.yOa.aOy',
-    '.yOa.aOy.yOa',
-    '..ay..a..ya.',
-    '...b..b..b..',
-    '....bOoOb...',
-    '....b.b.b...',
+    '......kk......',
+    '.....kwyk.....',
+    '....kyyhhk....',
+    '.kkk.kyhk.kkk.',
+    '.kyyk.kk.khhk.',
+    '..kyyk..khhk..',
+    '.kaayykkhhaak.',
+    '.kyyaakkaahhk.',
+    '..kyyk..khhk..',
+    '.kaayykkhhaak.',
+    '.kyyaakkaahhk.',
+    '..kyyykkhhhk..',
+    '...kkkkkkkk...',
+    '......kk......',
   ],
   kiemplant: [
     '..........',

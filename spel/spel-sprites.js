@@ -20,6 +20,7 @@ export const KLEUR = {
   u: '#0099db',
   l: '#8fd3ff', // lucht
   O: '#b84a12', // donkeroranje
+  h: '#f5c542', // tarwegeel
   z: '#3a3436', // zwarte vacht
   T: '#8a6a48', // cyperse vacht
   t: '#4d3a28', // cyperse strepen
@@ -37,7 +38,7 @@ export const KLEUR = {
 // Hoe een plantje kleurt na te veel water: bruin blad.
 const BRUIN = { g: 'a', G: 'X', y: 'a' };
 
-const ROT = { r: 'x', R: 'X', o: 'x', O: 'X', y: 'X', a: 'x', g: 'v', G: 'V', w: 's', p: 'x' };
+const ROT = { r: 'x', R: 'X', o: 'x', O: 'X', y: 'X', a: 'x', h: 'x', g: 'v', G: 'V', w: 's', p: 'x' };
 
 const EIGEN = {
   jong: [
