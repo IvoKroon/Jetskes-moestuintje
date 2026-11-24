@@ -15,6 +15,8 @@ const PALET = {
   p: '#f6a0c0', // roze
   s: '#c0cbdc', // grijs
   u: '#0099db', // blauw
+  a: '#d19a4a', // donker goud (graan)
+  O: '#b84a12', // donkeroranje
 };
 
 export const SPRITES = {
@@ -78,17 +80,18 @@ export const SPRITES = {
     '.kBoyoBBk.',
     '..kkkkkk..',
   ],
+  // Een schoof graan: drie aren met kafnaaldjes, bij elkaar gebonden met een oranje bandje.
   graan: [
-    '..k.k.k.k.',
-    '.kykykyky.',
-    '.kyoyoyoyk',
-    'kyoyoyoyok',
-    'kyyoyoyoyk',
-    '.kyyoyoyk.',
-    '..kkooookk',
-    '...kbobk..',
-    '..kbobobk.',
-    '.kbbk.kbbk',
+    '.a..a..a..',
+    '.ka.ka.ka.',
+    'kyakyakyak',
+    'kaykaykayk',
+    'kyakyakyak',
+    '.kakyakak.',
+    '..kbkbkb..',
+    '...kbbk...',
+    '...kooOk..',
+    '..kbkkbk..',
   ],
   kiemplant: [
     '..........',

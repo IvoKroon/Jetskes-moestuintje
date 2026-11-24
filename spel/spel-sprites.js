@@ -37,7 +37,7 @@ export const KLEUR = {
 // Hoe een plantje kleurt na te veel water: bruin blad.
 const BRUIN = { g: 'a', G: 'X', y: 'a' };
 
-const ROT = { r: 'x', R: 'X', o: 'x', y: 'X', g: 'v', G: 'V', w: 's', p: 'x' };
+const ROT = { r: 'x', R: 'X', o: 'x', O: 'X', y: 'X', a: 'x', g: 'v', G: 'V', w: 's', p: 'x' };
 
 const EIGEN = {
   jong: [
