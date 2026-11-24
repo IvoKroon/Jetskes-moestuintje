@@ -4,6 +4,7 @@ import { plaatje, plaatjeUrl, katPlaatje, maakGrond, maakGras, tekenTekst, KLEUR
 import { geluid } from './spel-geluid.js';
 import { bewaarOogst, eigenKatten, KATTEN, GEWAS_NAMEN } from './spel-markt.js';
 import { FRENZY, maakFrenzy, werkFrenzyBij, tekenFrenzy, pluk, plukOver } from './spel-frenzy.js';
+import { maakMol, werkMolBij, tekenMol, tikMol } from './spel-mol.js';
 import { haalTop, stuurScore, vulLijst, laatsteNaam, bewaarNaam } from '../shared/highscore.js';
 
 // ---------- Instellingen ----------
@@ -55,6 +56,19 @@ const TEST_FRENZY = new URLSearchParams(location.search).get('frenzy') === '1';
 const FRENZY_NA = TEST_FRENZY ? 2 : 60; // seconden spelen tot de eerste frenzy
 const FRENZY_ELKE = TEST_FRENZY ? 20 : 180; // daarna weer na zoveel seconden gewoon spelen
 const PLUK_COMBO_TIJD = 0.5;
+
+// De mol: komt af en toe even uit een molshoop in het gras kijken. Alleen voor de gezelligheid,
+// geen punten en geen straf. Tijdens de vlierbes frenzy blijft hij onder de grond.
+// Om de mol te testen: spel/?mol=1 laat hem na 2 seconden komen, en daarna om de paar seconden.
+const TEST_MOL = new URLSearchParams(location.search).get('mol') === '1';
+const MOL_EERSTE = TEST_MOL ? [2, 2] : [15, 25]; // seconden spelen tot de eerste mol (tussen ... en ...)
+const MOL_TUSSEN = TEST_MOL ? [3, 5] : [20, 40]; // daarna weer na zoveel seconden
+// Waar een molshoop mag komen: in het gras langs de onderkant, waar hij geen druppel of plantje bedekt.
+const MOL_PLEKKEN = [
+  ...[1, 2].map((k) => ({ x: MARGE + k * (VAK + TUSSEN) - 1, y: H - 2 })), // tussen de vakjes
+  { x: 3, y: H - 2 },
+  { x: W - 4, y: H - 2 }, // in de hoekjes
+];
 
 // ---------- Elementen ----------
 
@@ -129,6 +143,7 @@ function nieuwSpel() {
     frenzyTijd: 0, // tijd in frenzy's; S.tijd staat dan stil
     plukCombo: 0,
     laatstePluk: -9,
+    mol: maakMol(MOL_PLEKKEN, { eerste: MOL_EERSTE, tussen: MOL_TUSSEN }),
   };
 }
 
@@ -508,6 +523,8 @@ function tik(x, y) {
   );
   if (raak?.soort === 'lieveheersbeestje' && plaag) raak = plaag;
   if (raak) return raakBeestje(raak);
+  // de mol schrikt van een tik, maar alleen als je niet op een vakje tikt
+  if (!S.vakken.some((v) => x >= v.x && x < v.x + VAK && y >= v.y && y < v.y + VAK) && tikMol(S.mol, x, y)) return geluid.weg();
 
   const v = S.vakken.find((v) => x >= v.x - 1 && x < v.x + VAK + 1 && y >= v.y - 1 && y < v.y + VAK + 1);
   if (!v) return;
@@ -571,6 +588,8 @@ function teken() {
       ctx.fillRect(Math.round(v.x + 8 + Math.cos(a) * 5), Math.round(v.y + 4 + Math.sin(a * 1.3) * 2), 1, 1);
     }
   }
+
+  if (!S.frenzy) tekenMol(ctx, S.mol);
 
   for (const b of S.beestjes) {
     const img = plaatje(b.soort);
@@ -891,6 +910,7 @@ function lus(nu) {
     else {
       werkBij(dt);
       werkKatBij(dt);
+      werkMolBij(S.mol, dt);
       if (toestand === 'spelen' && S.tijd >= S.volgendeFrenzy) startFrenzy();
     }
   }
