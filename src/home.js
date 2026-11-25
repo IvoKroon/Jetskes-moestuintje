@@ -2,6 +2,7 @@ import { sprite } from '../shared/sprites.js';
 import { lees } from '../shared/opslag.js';
 import { BEGROETING } from './config.js';
 import { haalTop, vulLijst } from '../shared/highscore.js';
+import { startWillem } from './willem.js';
 
 function el(tag, klasse, tekst) {
   const e = document.createElement(tag);
@@ -82,4 +83,11 @@ const app = document.getElementById('app');
 render(app);
 // Terug met de terugknop (pagina uit het geheugen van de browser): opnieuw tekenen,
 // anders staat de bakkerij nog op slot terwijl ze hem net gekocht heeft.
-addEventListener('pageshow', (e) => e.persisted && render(app));
+// Ook Willem kan dan net gekocht zijn.
+addEventListener('pageshow', (e) => {
+  if (!e.persisted) return;
+  render(app);
+  startWillem();
+});
+// Willem de engelenkat vliegt af en toe omhoog, als hij gekocht is (of met ?willem=1).
+startWillem();
