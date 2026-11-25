@@ -138,3 +138,24 @@ p { margin: 0 0 12px; }
   .wiebel { animation: wiebel 1.2s steps(2) infinite; }
   @keyframes wiebel { 50% { transform: translateY(-4px); } }
 }
+
+/* Willem de engelenkat die over het hoofdscherm omhoog vliegt (src/willem.js) */
+.willem-vlieg,
+.willem-ster {
+  position: fixed;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  z-index: 20;
+  image-rendering: pixelated;
+}
+.willem-ster {
+  width: 4px;
+  height: 4px;
+  background: #fee761;
+  box-shadow: 4px 0 #fee761, -4px 0 #fee761, 0 4px #fee761, 0 -4px #fee761;
+  animation: willem-glinster 0.7s steps(4) forwards;
+}
+@keyframes willem-glinster {
+  to { opacity: 0; }
+}
